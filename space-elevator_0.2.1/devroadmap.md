@@ -6,6 +6,8 @@ A Factorio 2.0 / Space Age mod that adds space elevators to planets, providing a
 
 **Core Concept:** An expensive, multi-stage construction that acts as a fast, low-cost (or free) rocket silo alternative for late-game players.
 
+**Current Version:** 0.2.1
+
 ---
 
 ## Design Pillars
@@ -17,153 +19,167 @@ A Factorio 2.0 / Space Age mod that adds space elevators to planets, providing a
 
 ---
 
-## Phase 1: Core Prototype
+## Phase 1: Core Prototype - COMPLETE
 
 ### Goals
-- [ ] Basic space elevator entity that functions as a modified rocket silo
-- [ ] Single-stage construction (refinement in later phases)
-- [ ] Item transfer TO space platforms only
-- [ ] Basic technology research requirement
+- [x] Basic space elevator entity that functions as a modified rocket silo
+- [x] Single-stage construction (refinement in later phases)
+- [x] Item transfer TO space platforms only
+- [x] Basic technology research requirement
 
 ### Technical Tasks
-- [ ] Create prototype entity based on rocket silo
-- [ ] Define basic recipe and crafting requirements
-- [ ] Implement technology unlock (Cryogenic Science or higher)
-- [ ] Create placeholder graphics/sprites
-- [ ] Test basic item transfer functionality
-- [ ] Verify platform detection and delivery
+- [x] Create prototype entity based on rocket silo
+- [x] Define basic recipe and crafting requirements
+- [x] Implement technology unlock (Cryogenic Science Pack)
+- [x] Create placeholder graphics/sprites (uses rocket silo graphics)
+- [x] Test basic item transfer functionality
+- [x] Verify platform detection and delivery
 
-### Success Criteria
-- Player can build elevator, load items, and send to orbiting platform
-- Transfer is faster than standard rocket launch
-- No launch cost (or minimal cost)
+### Implementation Notes
+- Entity: `space-elevator` based on `rocket-silo` prototype
+- Only 1 rocket part required per launch (vs 100 for standard silo)
+- 10MW constant power consumption
+- Technology requires Cryogenic Science Pack (all 4 planets visited)
+- Uses companion chest system to bypass rocket cargo weight limits
 
 ---
 
-## Phase 2: Multi-Stage Construction
+## Phase 2: Multi-Stage Construction - COMPLETE
 
 ### Goals
-- [ ] Implement staged construction system (similar to Rocket-Silo Construction mod)
-- [ ] Add foundation/excavation phase
-- [ ] Add structural construction phases
-- [ ] Add final assembly/activation phase
+- [x] Implement staged construction system
+- [x] Add foundation/excavation phase
+- [x] Add structural construction phases
+- [x] Add final assembly/activation phase
 
-### Proposed Construction Stages
+### Construction Stages (Implemented)
 
 ```
 Stage 1: Site Preparation
-├── Excavate foundation (large area clearing)
-├── Resource cost: Stone, Concrete, Steel
-└── Time: Significant
+├── Excavate foundation
+├── Resource cost: 500 Stone, 1000 Concrete, 500 Steel Plate
+└── Time: 30 seconds
 
 Stage 2: Foundation Construction
 ├── Build anchor point and base structure
-├── Resource cost: Refined Concrete, Steel, Advanced materials
-└── Time: Moderate
+├── Resource cost: 2000 Refined Concrete, 1000 Steel, 500 Gears, 200 Pipes
+└── Time: 45 seconds
 
 Stage 3: Tower Assembly
 ├── Construct main elevator shaft
 ├── Resource cost: Materials from multiple planets
-│   ├── Nauvis: Steel, Processing Units
-│   ├── Vulcanus: Tungsten, Calcite
-│   ├── Fulgora: Holmium, Superconductors
-│   └── Gleba: Bioflux, Biter Eggs(?)
-└── Time: Extended
+│   ├── Nauvis: 500 Processing Units, 200 Electric Engines, 500 LDS
+│   ├── Vulcanus: 500 Tungsten Plate
+│   ├── Fulgora: 200 Superconductors
+│   └── Gleba: 100 Bioflux
+└── Time: 60 seconds
 
 Stage 4: Tether Deployment
 ├── Deploy space tether to orbit
-├── Resource cost: Carbon Fiber, Supercapacitors
-└── Time: Moderate
+├── Resource cost: 1000 LDS, 100 Accumulators, 500 Rocket Fuel
+└── Time: 45 seconds
 
 Stage 5: Activation & Calibration
 ├── Power up and synchronize with platforms
-├── Resource cost: Quality components(?)
-└── Time: Short
+├── Resource cost: 200 Processing Units, 100 Superconductors, 200 Rocket Fuel
+└── Time: 30 seconds
 ```
 
-### Technical Tasks
-- [ ] Research staged construction implementation methods
-- [ ] Create construction phase state machine
-- [ ] Design intermediate entity states/graphics
-- [ ] Implement per-stage resource requirements
-- [ ] Add progress indicators/GUI elements
-- [ ] Handle construction interruption/resumption
+### Technical Implementation
+- [x] Construction phase state machine in `construction-stages.lua`
+- [x] Per-stage resource requirements
+- [x] Progress indicators/GUI elements via entity-gui-lib
+- [x] Handle construction interruption/resumption
+- [x] Companion chest (48 slots) for construction materials
+- [x] Debug button for testing (skips construction)
 
 ---
 
-## Phase 3: Balance & Restrictions
+## Phase 3: Balance & Restrictions - PARTIAL
 
 ### Goals
 - [ ] Implement elevator placement limits
 - [ ] Add ongoing maintenance system
-- [ ] Balance energy consumption
-- [ ] Fine-tune resource costs
+- [x] Balance energy consumption
+- [x] Fine-tune resource costs
 
-### Placement Restrictions (Choose One - TBD)
-- **Option A:** 1 elevator per planet surface (simplest)
-- **Option B:** Minimum distance between elevators (e.g., 2000 tiles)
-- **Option C:** 1 elevator per X chunks claimed/developed
+### Placement Restrictions
+**Status:** Not yet implemented
+- Option A: 1 elevator per planet surface (simplest) - PREFERRED
+- Option B: Minimum distance between elevators
+- Option C: 1 elevator per X chunks
 
 ### Energy Requirements
-- [ ] Define constant power draw (substantial - MW range)
-- [ ] Define additional power per launch
-- [ ] Implement brownout/failure behavior
+- [x] Constant power draw: 10MW
+- [ ] Additional power per launch (not implemented)
+- [ ] Brownout/failure behavior (not implemented)
 
-### Maintenance System (TBD - See Open Questions)
-- [ ] Define maintenance resource types
-- [ ] Define consumption rate
-- [ ] Implement degradation/failure states
+### Maintenance System
+**Status:** Not yet implemented - deferred to future version
 
 ### Technical Tasks
 - [ ] Implement surface-wide elevator tracking
 - [ ] Add placement validation logic
 - [ ] Create maintenance consumption system
 - [ ] Design failure/degradation states
-- [ ] Balance testing across game stages
+- [x] Balance testing across game stages
 
 ---
 
-## Phase 4: Advanced Features
+## Phase 4: Advanced Features - COMPLETE
 
 ### Goals
-- [ ] Bidirectional transfer (receive from platforms)
-- [ ] Platform docking station entity
-- [ ] Fluid transfer capability
-- [ ] Player transport
+- [x] Bidirectional transfer (receive from platforms)
+- [x] Platform docking station entity
+- [x] Fluid transfer capability
+- [x] Player transport
 
-### Platform Docking Station
-- New entity placed on space platforms
-- Required to "dock" with planetary elevator
-- Enables bidirectional item/fluid transfer
-- Visual indicator of connection status
+### Platform Docking Station - COMPLETE
+- [x] New entity `space-elevator-dock` placed on space platforms
+- [x] Required to "dock" with planetary elevator
+- [x] Enables bidirectional item/fluid transfer
+- [x] Visual indicator of connection status in GUI
+- [x] Custom GUI with 48-slot inventory display
 
-### Fluid Transfer
-- Eliminates need for barreling
-- Requires docking station on both ends
-- Throughput balanced against barrel logistics
+### Bidirectional Item Transfer - COMPLETE
+- [x] Upload items from surface to platform
+- [x] Download items from platform to surface
+- [x] Manual transfer (10 items per click)
+- [x] Automatic transfer modes (continuous upload/download)
+- [x] Transfer tab in elevator GUI
 
-### Player Transport
-- Fast travel between surface and platform
-- Possible health/suit requirements
-- Animation/transition effect
+### Fluid Transfer - COMPLETE
+- [x] Eliminates need for barreling
+- [x] Elevator fluid tank (spawns 6 tiles north, visible)
+- [x] Dock fluid tank (place within 5 tiles of dock)
+- [x] Manual fluid transfer (1000 units per click)
+- [x] Fluid status display in GUI
 
-### Technical Tasks
-- [ ] Create docking station entity and prototype
-- [ ] Implement platform-to-surface item routing
-- [ ] Add fluid transfer capability
-- [ ] Implement player teleportation
-- [ ] Handle edge cases (platform moving, multiple elevators)
+### Player Transport - COMPLETE
+- [x] Fast travel between surface and platform
+- [x] 3-second travel time with countdown
+- [x] Works in both directions
+- [x] Travel tab in elevator GUI
+
+### Technical Implementation
+- [x] `platform-controller.lua` - Platform detection, docking, connection management
+- [x] `transfer-controller.lua` - Item and fluid transfer logic
+- [x] `player-transport.lua` - Player teleportation with transit state
+- [x] Auto-connect when single platform orbits
+- [x] Manual selection for multiple platforms
+- [x] Connection validation (auto-disconnect when platform leaves orbit)
+- [x] GUI tabs: Docking, Transfer, Travel
 
 ---
 
-## Phase 5: Polish & Compatibility
+## Phase 5: Polish & Compatibility - NOT STARTED
 
 ### Goals
 - [ ] Final graphics and animations
 - [ ] Sound design
 - [ ] GUI improvements
 - [ ] Mod compatibility layer
-- [ ] Localization
+- [ ] Localization (additional languages)
 
 ### Graphics & Audio
 - [ ] Elevator base sprite (multiple stages)
@@ -171,6 +187,12 @@ Stage 5: Activation & Calibration
 - [ ] Launch/transfer animation
 - [ ] Ambient operation sounds
 - [ ] Transfer initiation/completion sounds
+
+### Current Status
+- Using rocket silo placeholder graphics
+- Using steel chest graphics for dock
+- Using storage tank graphics for fluid tanks
+- English localization complete
 
 ### Mod Compatibility
 - [ ] Define API for resource additions
@@ -183,147 +205,97 @@ Stage 5: Activation & Calibration
 - [ ] Implement animations
 - [ ] Add configuration options
 - [ ] Create mod API documentation
-- [ ] Localization file structure
+- [ ] Additional localization files
 
 ---
 
-## Open Questions (To Be Decided)
-
-### Placement & Limits
-
-| Question | Options | Notes |
-|----------|---------|-------|
-| Elevator limit per surface? | 1 / Multiple / Distance-based | Affects balance significantly |
-| Minimum distance between elevators? | None / 1000 / 2000 / 3000 tiles | Only if multiple allowed |
-| Allow on all planet types? | Yes / Only base planets / Configurable | Consider modded planets |
-
-### Functionality
-
-| Question | Options | Notes |
-|----------|---------|-------|
-| Bidirectional transfer? | Send only / Send & Receive / Configurable | Complexity vs utility |
-| Require docking station on platform? | Yes / No / Optional for receiving | Adds another entity to manage |
-| Fluid transfer support? | Yes / No | Eliminates barrel meta |
-| Player transport? | Yes / No / Separate upgrade | Quality of life feature |
-| Cargo capacity vs rockets? | Same / Smaller / Larger / Configurable | Smaller + faster = different use case |
-
-### Costs & Maintenance
-
-| Question | Options | Notes |
-|----------|---------|-------|
-| Per-launch cost? | Free / Minimal / Significant | Core to balance |
-| Maintenance system? | Constant drain / Per-use / Random events / None | Complexity consideration |
-| Failure mode? | Stops working / Collapses / Two-stage degradation | Consequences matter |
-| Energy consumption? | Constant only / Constant + per-launch / Massive per-launch | Power infrastructure requirement |
-
-### Platform Interaction
-
-| Question | Options | Notes |
-|----------|---------|-------|
-| Multiple elevators + cargo pad behavior? | Priority system / Player choice / Nearest | Edge case handling |
-| Platform in transit behavior? | Queue items / Refuse / Auto-route to next | What if platform leaves orbit? |
-
----
-
-## Technical Reference
-
-### Factorio 2.0 / Space Age APIs to Investigate
-
-- `rocket-silo` prototype modifications
-- Space platform detection and interaction
-- Surface-specific entity limits
-- Multi-stage construction patterns
-- Cross-surface item transfer mechanisms
-- Custom GUI implementation
-
-### Similar Mods for Reference
-
-- **Rocket Silo Construction** - Multi-stage building pattern
-- **Space Exploration** - Space elevator concept (different implementation)
-- **Various logistics mods** - Cross-surface transfer patterns
-
-### File Structure (Proposed)
+## Implemented File Structure
 
 ```
-space-elevator/
+space-elevator_0.2.1/
 ├── info.json
 ├── data.lua
-├── data-updates.lua
-├── data-final-fixes.lua
 ├── control.lua
-├── settings.lua
 ├── changelog.txt
-├── thumbnail.png
+├── devroadmap.md
+├── README.md
 ├── locale/
 │   └── en/
 │       └── locale.cfg
 ├── prototypes/
-│   ├── entity.lua
-│   ├── item.lua
-│   ├── recipe.lua
-│   ├── technology.lua
-│   └── docking-station.lua
-├── scripts/
-│   ├── elevator-controller.lua
-│   ├── construction-stages.lua
-│   ├── maintenance.lua
-│   ├── platform-interface.lua
-│   └── compatibility.lua
-└── graphics/
-    ├── entity/
-    ├── icons/
-    └── gui/
+│   ├── entity.lua      # Elevator, dock, fluid tanks, companion chest
+│   ├── item.lua        # All items
+│   ├── recipe.lua      # All recipes
+│   └── technology.lua  # Tech unlock
+└── scripts/
+    ├── elevator-controller.lua    # Core elevator logic
+    ├── construction-stages.lua    # 5-stage construction system
+    ├── platform-controller.lua    # Docking and platform management
+    ├── transfer-controller.lua    # Item and fluid transfers
+    └── player-transport.lua       # Player teleportation
 ```
+
+---
+
+## Dependencies
+
+- **Factorio Base** >= 2.0
+- **Space Age DLC** >= 2.0
+- **entity-gui-lib** >= 0.1.0 (custom GUI framework)
 
 ---
 
 ## Milestones
 
-### Milestone 1: Proof of Concept
-- Basic working elevator (modified rocket silo)
-- Sends items to platform
-- No fancy graphics needed
+### Milestone 1: Proof of Concept - COMPLETE
+- [x] Basic working elevator (modified rocket silo)
+- [x] Sends items to platform
+- [x] Placeholder graphics
 
-### Milestone 2: Playable Alpha
-- Multi-stage construction
-- Placement restrictions
-- Basic maintenance
-- Placeholder graphics
+### Milestone 2: Playable Alpha - COMPLETE
+- [x] Multi-stage construction
+- [ ] Placement restrictions (deferred)
+- [ ] Basic maintenance (deferred)
+- [x] Placeholder graphics
 
-### Milestone 3: Feature Complete Beta
-- All core features implemented
-- Bidirectional transfer (if decided)
-- Docking station (if decided)
-- Balance pass complete
+### Milestone 3: Feature Complete Beta - COMPLETE
+- [x] All core features implemented
+- [x] Bidirectional transfer
+- [x] Docking station
+- [x] Fluid transfer
+- [x] Player transport
+- [x] Balance pass complete
 
-### Milestone 4: Release Candidate
-- Final graphics and audio
-- Full localization
-- Mod compatibility tested
-- Documentation complete
+### Milestone 4: Release Candidate - IN PROGRESS
+- [ ] Final graphics and audio
+- [ ] Full localization
+- [ ] Mod compatibility tested
+- [ ] Documentation complete
 
 ### Milestone 5: Public Release
-- Mod portal upload
-- Community feedback integration
-- Bug fixes
+- [ ] Mod portal upload
+- [ ] Community feedback integration
+- [ ] Bug fixes
 
 ---
 
-## Resources & Links
+## Known Issues / Future Work
 
-- [Factorio Modding Wiki](https://wiki.factorio.com/Modding)
-- [Factorio API Documentation](https://lua-api.factorio.com/latest/)
-- [Factorio Forums - Modding](https://forums.factorio.com/viewforum.php?f=82)
-- [Space Age DLC Documentation](https://factorio.com/blog/) (check dev blogs)
+1. **Existing elevators need rebuild** - Fluid tank position change requires rebuilding elevator
+2. **No placement limits** - Multiple elevators can be built per planet (Phase 3 incomplete)
+3. **No maintenance system** - Deferred to future version
+4. **Placeholder graphics** - Using base game assets
 
 ---
 
-## Changelog
+## Version History
 
 | Date | Version | Changes |
 |------|---------|---------|
-| 2024-XX-XX | 0.0.1 | Initial roadmap created |
+| 2025-11-26 | 0.2.1 | Bug fixes, fluid UI, dock GUI improvements |
+| 2025-11-26 | 0.2.0 | Phase 4 complete - Docking, transfers, player transport |
+| 2025-11-26 | 0.1.0 | Initial release - Phases 1 & 2 complete |
 
 ---
 
-*This document is a living roadmap and will be updated as development progresses and decisions are made on open questions.*
+*This document is a living roadmap and will be updated as development progresses.*
