@@ -85,13 +85,36 @@ function construction_stages.get_stage_name(stage_number)
   return stage and stage.name or "Unknown"
 end
 
+-- Helper to get the construction materials inventory
+-- Rocket silos have multiple inventories - inserters put items into rocket cargo
+function construction_stages.get_inventory(entity)
+  if not entity or not entity.valid then return nil end
+
+  -- For rocket silos, inserters put items into the rocket's cargo inventory
+  -- Try these in order of likelihood:
+  local inventory_types = {
+    defines.inventory.rocket_silo_rocket,   -- The rocket's cargo (where inserters put items)
+    defines.inventory.rocket_silo_input,    -- Alternative cargo input
+    defines.inventory.chest,                -- Generic chest (if applicable)
+  }
+
+  for _, inv_type in ipairs(inventory_types) do
+    local inv = entity.get_inventory(inv_type)
+    if inv then
+      -- Return first valid inventory (even if empty)
+      return inv
+    end
+  end
+
+  return nil
+end
+
 -- Check if all materials for a stage are provided
 function construction_stages.check_materials(entity, stage_number)
   local stage = construction_stages.stages[stage_number]
   if not stage then return false end
 
-  -- Get the elevator's input inventory
-  local inventory = entity.get_inventory(defines.inventory.rocket_silo_input)
+  local inventory = construction_stages.get_inventory(entity)
   if not inventory then return false end
 
   -- Check each required material
@@ -110,7 +133,7 @@ function construction_stages.consume_materials(entity, stage_number)
   local stage = construction_stages.stages[stage_number]
   if not stage then return false end
 
-  local inventory = entity.get_inventory(defines.inventory.rocket_silo_input)
+  local inventory = construction_stages.get_inventory(entity)
   if not inventory then return false end
 
   -- Remove each required material
@@ -127,7 +150,7 @@ function construction_stages.get_material_status(entity, stage_number)
   local stage = construction_stages.stages[stage_number]
   if not stage then return {} end
 
-  local inventory = entity.get_inventory(defines.inventory.rocket_silo_input)
+  local inventory = construction_stages.get_inventory(entity)
   local status = {}
 
   for _, req in ipairs(stage.materials) do
@@ -148,7 +171,7 @@ function construction_stages.get_material_progress(entity, stage_number)
   local stage = construction_stages.stages[stage_number]
   if not stage then return 0 end
 
-  local inventory = entity.get_inventory(defines.inventory.rocket_silo_input)
+  local inventory = construction_stages.get_inventory(entity)
   if not inventory then return 0 end
 
   local total_required = 0

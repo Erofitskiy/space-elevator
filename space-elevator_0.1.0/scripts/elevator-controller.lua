@@ -120,6 +120,38 @@ function elevator_controller.activate_elevator(unit_number)
   elevator_data.launch_count = 0
 end
 
+-- Register an untracked elevator (e.g., spawned via command or from older saves)
+function elevator_controller.register_elevator(entity)
+  if not entity or not entity.valid then return nil end
+
+  -- Check if already registered
+  local existing = elevator_controller.get_elevator_data(entity.unit_number)
+  if existing then return existing end
+
+  local surface = entity.surface
+  local surface_name = surface.name
+
+  -- Initialize tracking for this surface if needed
+  storage.elevator_count_per_surface[surface_name] = storage.elevator_count_per_surface[surface_name] or 0
+  storage.elevator_count_per_surface[surface_name] = storage.elevator_count_per_surface[surface_name] + 1
+
+  -- Create elevator data
+  local elevator_data = {
+    entity = entity,
+    surface = surface_name,
+    position = entity.position,
+    unit_number = entity.unit_number,
+    construction_stage = 1,
+    construction_progress = 0,
+    is_constructing = false,
+    is_operational = false,
+    launch_count = 0,
+  }
+
+  table.insert(storage.space_elevators, elevator_data)
+  return elevator_data
+end
+
 -- ============================================================================
 -- Event Handlers
 -- ============================================================================

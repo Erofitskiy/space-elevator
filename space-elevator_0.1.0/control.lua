@@ -11,9 +11,19 @@ remote.add_interface("space_elevator", {
   -- Build the construction GUI
   build_elevator_gui = function(container, entity, player)
     local elevator_data = elevator_controller.get_elevator_data(entity.unit_number)
-    if not elevator_data then return end
 
-    local stage = elevator_data.construction_stage
+    -- Auto-register untracked elevators (e.g., spawned via command or from older saves)
+    if not elevator_data then
+      elevator_data = elevator_controller.register_elevator(entity)
+    end
+
+    -- Safety check
+    if not elevator_data then
+      container.add{type = "label", caption = "Error: Could not initialize elevator data"}
+      return
+    end
+
+    local stage = elevator_data.construction_stage or 1
     local is_complete = stage >= construction_stages.STAGE_COMPLETE
 
     -- Create tabbed interface
@@ -177,12 +187,35 @@ remote.add_interface("space_elevator", {
         }
       end
 
+      -- Show current inventory contents
+      tabs.materials.add{
+        type = "label",
+        caption = "Current Inventory:",
+        style = "bold_label",
+      }.style.top_margin = 12
+
+      local inventory = construction_stages.get_inventory(entity)
+      if inventory and #inventory > 0 then
+        remote.call("entity_gui_lib", "create_inventory_display", tabs.materials, {
+          inventory = inventory,
+          columns = 10,
+          show_empty = true,
+          mod_name = "space_elevator",
+          on_click = "on_inventory_click",
+        })
+      else
+        tabs.materials.add{
+          type = "label",
+          caption = "[No accessible inventory - use inserters or close GUI to access vanilla inventory]",
+          style = "bold_red_label",
+        }
+      end
+
       -- Tip about inserting materials
       tabs.materials.add{
         type = "label",
-        caption = "Insert materials into the elevator's input slots.",
-        style = "bold_label",
-      }.style.top_margin = 12
+        caption = "Tip: Close this GUI to access the vanilla inventory slots, or use inserters.",
+      }.style.top_margin = 8
     end
 
     -- ========== Info Tab ==========
@@ -222,8 +255,8 @@ remote.add_interface("space_elevator", {
     local elevator_data = elevator_controller.get_elevator_data(entity.unit_number)
     if not elevator_data then return end
 
-    local stage = elevator_data.construction_stage
-    if stage >= construction_stages.STAGE_COMPLETE then return end
+    local stage = elevator_data.construction_stage or 1
+    if not construction_stages.STAGE_COMPLETE or stage >= construction_stages.STAGE_COMPLETE then return end
 
     -- Update progress bars
     for _, child in pairs(content.children) do
@@ -257,6 +290,14 @@ remote.add_interface("space_elevator", {
   -- Handle start construction
   start_construction = function(unit_number)
     elevator_controller.start_construction(unit_number)
+  end,
+
+  -- Handle inventory slot clicks (for future use)
+  on_inventory_click = function(player, slot_index, item_stack, data)
+    -- Currently just informational - could add item transfer in future
+    if item_stack then
+      player.print("[Space Elevator] Slot " .. slot_index .. ": " .. item_stack.name .. " x" .. item_stack.count)
+    end
   end,
 })
 
