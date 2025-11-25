@@ -1,0 +1,23 @@
+---------------------------------------------------------------------------------------------------
+Version: 0.1.0
+Date: 2025-11-26
+  Features:
+    - Initial release of Space Elevator mod for Factorio 2.0 / Space Age
+    - Custom space elevator entity based on rocket silo (only 1 rocket part per launch vs 100)
+    - 10MW constant power consumption for balanced late-game gameplay
+    - Technology unlock requires Cryogenic Science Pack (all 4 planets visited)
+    - Multi-stage construction system with 5 stages:
+        - Stage 1: Site Preparation (Stone, Concrete, Steel Plate)
+        - Stage 2: Foundation Construction (Refined Concrete, Steel, Gears, Pipes)
+        - Stage 3: Tower Assembly (Processing Units, Electric Engines, LDS, Tungsten, Superconductors, Bioflux)
+        - Stage 4: Tether Deployment (Low Density Structures, Accumulators, Rocket Fuel)
+        - Stage 5: Activation (Processing Units, Superconductors, Rocket Fuel)
+    - Custom GUI powered by entity-gui-lib with three tabs:
+        - Construction tab with stage progress and build timer
+        - Materials tab showing required vs available items with live updates
+        - Info tab with elevator status and launch statistics
+    - Interactive inventory display with click-to-transfer functionality
+    - Player inventory panel alongside entity GUI
+    - Companion chest system (invisible 48-slot chest) to bypass rocket cargo weight limits
+    - Auto-registration for spawned/legacy elevators when GUI is opened
+    - GUI auto-refresh every 20 ticks with automatic rebuild on stage changes
