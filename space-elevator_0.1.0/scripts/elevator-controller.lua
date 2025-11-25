@@ -45,14 +45,18 @@ function elevator_controller.start_construction(unit_number)
   local entity = elevator_data.entity
   if not entity or not entity.valid then return false end
 
-  -- Check materials
+  -- Get companion chest for materials
+  local chest = elevator_data.chest
+  if not chest or not chest.valid then return false end
+
+  -- Check materials in companion chest
   local stage = elevator_data.construction_stage
-  if not construction_stages.check_materials(entity, stage) then
+  if not construction_stages.check_materials(chest, stage) then
     return false
   end
 
   -- Consume materials and start construction
-  construction_stages.consume_materials(entity, stage)
+  construction_stages.consume_materials(chest, stage)
   elevator_data.is_constructing = true
   elevator_data.construction_progress = 0
 
@@ -120,6 +124,24 @@ function elevator_controller.activate_elevator(unit_number)
   elevator_data.launch_count = 0
 end
 
+-- Spawn companion chest for construction materials
+local function spawn_construction_chest(entity)
+  if not entity or not entity.valid then return nil end
+
+  -- Create invisible chest at same position for construction materials
+  local chest = entity.surface.create_entity{
+    name = "space-elevator-chest",
+    position = entity.position,
+    force = entity.force,
+  }
+
+  if chest then
+    chest.destructible = false  -- Can't be destroyed directly
+  end
+
+  return chest
+end
+
 -- Register an untracked elevator (e.g., spawned via command or from older saves)
 function elevator_controller.register_elevator(entity)
   if not entity or not entity.valid then return nil end
@@ -135,9 +157,13 @@ function elevator_controller.register_elevator(entity)
   storage.elevator_count_per_surface[surface_name] = storage.elevator_count_per_surface[surface_name] or 0
   storage.elevator_count_per_surface[surface_name] = storage.elevator_count_per_surface[surface_name] + 1
 
+  -- Spawn companion chest for construction materials
+  local chest = spawn_construction_chest(entity)
+
   -- Create elevator data
   local elevator_data = {
     entity = entity,
+    chest = chest,  -- Link to companion chest
     surface = surface_name,
     position = entity.position,
     unit_number = entity.unit_number,
@@ -150,6 +176,15 @@ function elevator_controller.register_elevator(entity)
 
   table.insert(storage.space_elevators, elevator_data)
   return elevator_data
+end
+
+-- Get the construction chest for an elevator
+function elevator_controller.get_construction_chest(unit_number)
+  local elevator_data = elevator_controller.get_elevator_data(unit_number)
+  if elevator_data and elevator_data.chest and elevator_data.chest.valid then
+    return elevator_data.chest
+  end
+  return nil
 end
 
 -- ============================================================================
@@ -170,9 +205,13 @@ function elevator_controller.on_elevator_built(event)
   -- Track this elevator
   storage.elevator_count_per_surface[surface_name] = storage.elevator_count_per_surface[surface_name] + 1
 
+  -- Spawn companion chest for construction materials
+  local chest = spawn_construction_chest(entity)
+
   -- Store elevator reference with construction state
   table.insert(storage.space_elevators, {
     entity = entity,
+    chest = chest,  -- Link to companion chest
     surface = surface_name,
     position = entity.position,
     unit_number = entity.unit_number,
@@ -194,6 +233,28 @@ function elevator_controller.on_elevator_removed(event)
 
   local surface_name = entity.surface.name
   local unit_number = entity.unit_number
+
+  -- Get elevator data to find companion chest
+  local elevator_data = elevator_controller.get_elevator_data(unit_number)
+
+  -- Remove companion chest if it exists
+  if elevator_data and elevator_data.chest and elevator_data.chest.valid then
+    -- Drop chest contents on ground before destroying
+    local chest_inventory = elevator_data.chest.get_inventory(defines.inventory.chest)
+    if chest_inventory then
+      for i = 1, #chest_inventory do
+        local stack = chest_inventory[i]
+        if stack and stack.valid_for_read then
+          entity.surface.spill_item_stack{
+            position = entity.position,
+            stack = stack,
+            force = entity.force,
+          }
+        end
+      end
+    end
+    elevator_data.chest.destroy()
+  end
 
   -- Update count
   if storage.elevator_count_per_surface[surface_name] then

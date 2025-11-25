@@ -5,16 +5,15 @@ local construction_stages = {}
 
 -- Stage definitions
 -- Each stage has: name, description, required materials, and construction time (in ticks)
--- Material amounts reduced to fit within rocket cargo weight limits
--- TODO: Investigate alternative storage approach for larger quantities
+-- Materials stored in companion chest (no weight limits)
 construction_stages.stages = {
   [1] = {
     name = "Site Preparation",
     description = "Excavate foundation and prepare the construction site",
     materials = {
-      {name = "stone", amount = 50},
-      {name = "concrete", amount = 100},
-      {name = "steel-plate", amount = 50},
+      {name = "stone", amount = 500},
+      {name = "concrete", amount = 1000},
+      {name = "steel-plate", amount = 500},
     },
     construction_time = 60 * 30,  -- 30 seconds
   },
@@ -22,10 +21,10 @@ construction_stages.stages = {
     name = "Foundation Construction",
     description = "Build the anchor point and base structure",
     materials = {
-      {name = "refined-concrete", amount = 100},
-      {name = "steel-plate", amount = 50},
-      {name = "iron-gear-wheel", amount = 50},
-      {name = "pipe", amount = 50},
+      {name = "refined-concrete", amount = 2000},
+      {name = "steel-plate", amount = 1000},
+      {name = "iron-gear-wheel", amount = 500},
+      {name = "pipe", amount = 200},
     },
     construction_time = 60 * 45,  -- 45 seconds
   },
@@ -34,15 +33,15 @@ construction_stages.stages = {
     description = "Construct the main elevator shaft using materials from across the galaxy",
     materials = {
       -- Nauvis materials
-      {name = "processing-unit", amount = 50},
-      {name = "electric-engine-unit", amount = 25},
-      {name = "low-density-structure", amount = 50},
+      {name = "processing-unit", amount = 500},
+      {name = "electric-engine-unit", amount = 200},
+      {name = "low-density-structure", amount = 500},
       -- Vulcanus materials
-      {name = "tungsten-plate", amount = 50},
+      {name = "tungsten-plate", amount = 500},
       -- Fulgora materials
-      {name = "superconductor", amount = 25},
+      {name = "superconductor", amount = 200},
       -- Gleba materials
-      {name = "bioflux", amount = 25},
+      {name = "bioflux", amount = 100},
     },
     construction_time = 60 * 60,  -- 60 seconds
   },
@@ -51,10 +50,10 @@ construction_stages.stages = {
     description = "Deploy the space tether to reach orbit",
     materials = {
       -- Using low-density-structure for the tether (carbon composite)
-      {name = "low-density-structure", amount = 50},
+      {name = "low-density-structure", amount = 1000},
       -- Accumulators for energy storage along the tether
-      {name = "accumulator", amount = 25},
-      {name = "rocket-fuel", amount = 50},
+      {name = "accumulator", amount = 100},
+      {name = "rocket-fuel", amount = 500},
     },
     construction_time = 60 * 45,  -- 45 seconds
   },
@@ -62,9 +61,9 @@ construction_stages.stages = {
     name = "Activation",
     description = "Power up systems and synchronize with orbital platforms",
     materials = {
-      {name = "processing-unit", amount = 25},
-      {name = "superconductor", amount = 10},
-      {name = "rocket-fuel", amount = 25},
+      {name = "processing-unit", amount = 200},
+      {name = "superconductor", amount = 100},
+      {name = "rocket-fuel", amount = 200},
     },
     construction_time = 60 * 30,  -- 30 seconds
   },
@@ -87,36 +86,22 @@ function construction_stages.get_stage_name(stage_number)
   return stage and stage.name or "Unknown"
 end
 
--- Helper to get the construction materials inventory
--- Rocket silos have multiple inventories - inserters put items into rocket cargo
-function construction_stages.get_inventory(entity)
-  if not entity or not entity.valid then return nil end
+-- Helper to get the construction materials inventory from a chest
+-- Now uses companion chest instead of rocket silo cargo (no weight limits!)
+function construction_stages.get_inventory(chest)
+  if not chest or not chest.valid then return nil end
 
-  -- For rocket silos, inserters put items into the rocket's cargo inventory
-  -- Try these in order of likelihood:
-  local inventory_types = {
-    defines.inventory.rocket_silo_rocket,   -- The rocket's cargo (where inserters put items)
-    defines.inventory.rocket_silo_input,    -- Alternative cargo input
-    defines.inventory.chest,                -- Generic chest (if applicable)
-  }
-
-  for _, inv_type in ipairs(inventory_types) do
-    local inv = entity.get_inventory(inv_type)
-    if inv then
-      -- Return first valid inventory (even if empty)
-      return inv
-    end
-  end
-
-  return nil
+  -- Get the chest's inventory
+  return chest.get_inventory(defines.inventory.chest)
 end
 
 -- Check if all materials for a stage are provided
-function construction_stages.check_materials(entity, stage_number)
+-- chest: the companion chest entity (not the elevator)
+function construction_stages.check_materials(chest, stage_number)
   local stage = construction_stages.stages[stage_number]
   if not stage then return false end
 
-  local inventory = construction_stages.get_inventory(entity)
+  local inventory = construction_stages.get_inventory(chest)
   if not inventory then return false end
 
   -- Check each required material
@@ -131,11 +116,12 @@ function construction_stages.check_materials(entity, stage_number)
 end
 
 -- Consume materials for a stage (call this when stage construction begins)
-function construction_stages.consume_materials(entity, stage_number)
+-- chest: the companion chest entity (not the elevator)
+function construction_stages.consume_materials(chest, stage_number)
   local stage = construction_stages.stages[stage_number]
   if not stage then return false end
 
-  local inventory = construction_stages.get_inventory(entity)
+  local inventory = construction_stages.get_inventory(chest)
   if not inventory then return false end
 
   -- Remove each required material
@@ -148,11 +134,12 @@ end
 
 -- Get material status for GUI display
 -- Returns table of {name, required, current, satisfied}
-function construction_stages.get_material_status(entity, stage_number)
+-- chest: the companion chest entity (not the elevator)
+function construction_stages.get_material_status(chest, stage_number)
   local stage = construction_stages.stages[stage_number]
   if not stage then return {} end
 
-  local inventory = construction_stages.get_inventory(entity)
+  local inventory = construction_stages.get_inventory(chest)
   local status = {}
 
   for _, req in ipairs(stage.materials) do
@@ -169,11 +156,12 @@ function construction_stages.get_material_status(entity, stage_number)
 end
 
 -- Calculate overall material progress (0-1) for a stage
-function construction_stages.get_material_progress(entity, stage_number)
+-- chest: the companion chest entity (not the elevator)
+function construction_stages.get_material_progress(chest, stage_number)
   local stage = construction_stages.stages[stage_number]
   if not stage then return 0 end
 
-  local inventory = construction_stages.get_inventory(entity)
+  local inventory = construction_stages.get_inventory(chest)
   if not inventory then return 0 end
 
   local total_required = 0

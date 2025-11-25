@@ -75,8 +75,9 @@ remote.add_interface("space_elevator", {
         caption = stage_info.description,
       }.style.top_margin = 4
 
-      -- Material progress bar
-      local mat_progress = construction_stages.get_material_progress(entity, stage)
+      -- Material progress bar (use companion chest)
+      local chest = elevator_data.chest
+      local mat_progress = construction_stages.get_material_progress(chest, stage)
       tabs.construction.add{
         type = "label",
         caption = "Material Progress:",
@@ -108,8 +109,8 @@ remote.add_interface("space_elevator", {
           name = "elevator_time_remaining",
         }
       else
-        -- Start construction button
-        local can_start = construction_stages.check_materials(entity, stage)
+        -- Start construction button (check companion chest)
+        local can_start = construction_stages.check_materials(chest, stage)
         local button_flow = tabs.construction.add{type = "flow", direction = "horizontal"}
         button_flow.style.top_margin = 12
 
@@ -142,7 +143,8 @@ remote.add_interface("space_elevator", {
         style = "caption_label",
       }
 
-      local mat_status = construction_stages.get_material_status(entity, stage)
+      local chest = elevator_data.chest
+      local mat_status = construction_stages.get_material_status(chest, stage)
       local mat_table = tabs.materials.add{
         type = "table",
         column_count = 3,
@@ -194,7 +196,7 @@ remote.add_interface("space_elevator", {
         style = "bold_label",
       }.style.top_margin = 12
 
-      local inventory = construction_stages.get_inventory(entity)
+      local inventory = construction_stages.get_inventory(chest)
       if inventory and #inventory > 0 then
         remote.call("entity_gui_lib", "create_inventory_display", tabs.materials, {
           inventory = inventory,
@@ -268,7 +270,8 @@ remote.add_interface("space_elevator", {
           if tab_content then
             for _, elem in pairs(tab_content.children) do
               if elem.name == "elevator_material_progress" then
-                elem.value = construction_stages.get_material_progress(entity, stage)
+                local chest = elevator_data.chest
+                elem.value = construction_stages.get_material_progress(chest, stage)
               elseif elem.name == "elevator_build_progress" and elevator_data.is_constructing then
                 local stage_info = construction_stages.get_stage(stage)
                 elem.value = elevator_data.construction_progress / stage_info.construction_time
