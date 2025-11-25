@@ -20,19 +20,42 @@ space_elevator.rocket_parts_required = 1
 -- Higher constant energy consumption (late game should have power infrastructure)
 space_elevator.energy_usage = "10MW"  -- Significant constant draw vs 250kW for rocket silo
 
+-- Increase inventory size for construction materials
+-- Default rocket silo has very limited cargo space, we need more for construction stages
+space_elevator.rocket_result_inventory_size = 20  -- 20 slots for construction materials (default is 1)
+
 -- Update localised name/description references
 space_elevator.localised_name = {"entity-name.space-elevator"}
 space_elevator.localised_description = {"entity-description.space-elevator"}
 
--- Note: The following properties from rocket-silo are inherited and could be tweaked:
--- times_to_blink (default 40) - rocket ready blinking
--- light_blinking_speed (default 1/3)
--- door_opening_speed (default 1/64.5)
--- rocket_rising_delay (default 200 ticks)
--- launch_wait_time (default 120 ticks) - time after door opens before launch
--- rocket_result_inventory_size (default 1 slot for cargo pod)
--- fixed_recipe - could be set to use a custom recipe instead of rocket-part
---
--- For Phase 1, we keep defaults to ensure stability
+-- Create a custom rocket entity with higher weight capacity for construction materials
+local elevator_rocket = table.deepcopy(data.raw["rocket-silo-rocket"]["rocket-silo-rocket"])
+elevator_rocket.name = "space-elevator-rocket"
+
+-- Increase the cargo weight capacity significantly
+-- Default rockets have limited weight for space cargo, we need much more for construction
+if elevator_rocket.inventory_size then
+  elevator_rocket.inventory_size = 40  -- More slots
+end
+
+-- Increase weight capacity if this property exists
+if elevator_rocket.weight_capacity then
+  elevator_rocket.weight_capacity = 1000000000  -- 1 billion kg capacity
+end
+
+-- Try cargo_weight_capacity for Space Age rockets
+if elevator_rocket.cargo_weight_capacity then
+  elevator_rocket.cargo_weight_capacity = 1000000000
+end
+
+data:extend({elevator_rocket})
+
+-- Link the space elevator to use our custom rocket
+space_elevator.rocket_entity = "space-elevator-rocket"
+
+-- Also try increasing the silo's own weight capacity if it has one
+if space_elevator.cargo_weight_capacity then
+  space_elevator.cargo_weight_capacity = 1000000000
+end
 
 data:extend({space_elevator})

@@ -5,14 +5,16 @@ local construction_stages = {}
 
 -- Stage definitions
 -- Each stage has: name, description, required materials, and construction time (in ticks)
+-- Material amounts reduced to fit within rocket cargo weight limits
+-- TODO: Investigate alternative storage approach for larger quantities
 construction_stages.stages = {
   [1] = {
     name = "Site Preparation",
     description = "Excavate foundation and prepare the construction site",
     materials = {
-      {name = "stone", amount = 500},
-      {name = "concrete", amount = 1000},
-      {name = "steel-plate", amount = 200},
+      {name = "stone", amount = 50},
+      {name = "concrete", amount = 100},
+      {name = "steel-plate", amount = 50},
     },
     construction_time = 60 * 30,  -- 30 seconds
   },
@@ -20,10 +22,10 @@ construction_stages.stages = {
     name = "Foundation Construction",
     description = "Build the anchor point and base structure",
     materials = {
-      {name = "refined-concrete", amount = 1000},
-      {name = "steel-plate", amount = 500},
-      {name = "iron-gear-wheel", amount = 200},
-      {name = "pipe", amount = 100},
+      {name = "refined-concrete", amount = 100},
+      {name = "steel-plate", amount = 50},
+      {name = "iron-gear-wheel", amount = 50},
+      {name = "pipe", amount = 50},
     },
     construction_time = 60 * 45,  -- 45 seconds
   },
@@ -32,15 +34,15 @@ construction_stages.stages = {
     description = "Construct the main elevator shaft using materials from across the galaxy",
     materials = {
       -- Nauvis materials
-      {name = "processing-unit", amount = 200},
-      {name = "electric-engine-unit", amount = 100},
-      {name = "low-density-structure", amount = 200},
+      {name = "processing-unit", amount = 50},
+      {name = "electric-engine-unit", amount = 25},
+      {name = "low-density-structure", amount = 50},
       -- Vulcanus materials
-      {name = "tungsten-plate", amount = 300},
+      {name = "tungsten-plate", amount = 50},
       -- Fulgora materials
-      {name = "superconductor", amount = 100},
+      {name = "superconductor", amount = 25},
       -- Gleba materials
-      {name = "bioflux", amount = 100},
+      {name = "bioflux", amount = 25},
     },
     construction_time = 60 * 60,  -- 60 seconds
   },
@@ -49,10 +51,10 @@ construction_stages.stages = {
     description = "Deploy the space tether to reach orbit",
     materials = {
       -- Using low-density-structure for the tether (carbon composite)
-      {name = "low-density-structure", amount = 300},
+      {name = "low-density-structure", amount = 50},
       -- Accumulators for energy storage along the tether
-      {name = "accumulator", amount = 100},
-      {name = "rocket-fuel", amount = 100},
+      {name = "accumulator", amount = 25},
+      {name = "rocket-fuel", amount = 50},
     },
     construction_time = 60 * 45,  -- 45 seconds
   },
@@ -60,9 +62,9 @@ construction_stages.stages = {
     name = "Activation",
     description = "Power up systems and synchronize with orbital platforms",
     materials = {
-      {name = "processing-unit", amount = 100},
-      {name = "superconductor", amount = 50},
-      {name = "rocket-fuel", amount = 50},
+      {name = "processing-unit", amount = 25},
+      {name = "superconductor", amount = 10},
+      {name = "rocket-fuel", amount = 25},
     },
     construction_time = 60 * 30,  -- 30 seconds
   },
