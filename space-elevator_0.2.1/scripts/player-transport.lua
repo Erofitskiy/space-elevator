@@ -5,8 +5,11 @@ local platform_controller = require("scripts.platform-controller")
 
 local player_transport = {}
 
--- Travel time in ticks (180 ticks = 3 seconds)
-local TRAVEL_TIME = 180
+-- Get travel time from settings (runtime-global, in seconds, converted to ticks)
+local function get_travel_time()
+  local seconds = settings.global["space-elevator-travel-time"].value
+  return seconds * 60  -- Convert to ticks
+end
 
 -- ============================================================================
 -- Travel State Management
@@ -134,7 +137,8 @@ function player_transport.travel_up(player, elevator_data)
   end
 
   -- Start transit
-  local arrival_tick = game.tick + TRAVEL_TIME
+  local travel_time = get_travel_time()
+  local arrival_tick = game.tick + travel_time
   storage.players_in_transit[player.index] = {
     direction = "up",
     elevator_unit_number = elevator_data.unit_number,
@@ -146,7 +150,7 @@ function player_transport.travel_up(player, elevator_data)
 
   -- Immobilize player during transit
   player.character_running_speed_modifier = -1  -- Can't move
-  player.print("[Space Elevator] Ascending to platform... (" .. math.floor(TRAVEL_TIME / 60) .. " seconds)")
+  player.print("[Space Elevator] Ascending to platform... (" .. math.floor(travel_time / 60) .. " seconds)")
 
   return true
 end
@@ -206,7 +210,8 @@ function player_transport.travel_down(player, elevator_data)
   end
 
   -- Start transit
-  local arrival_tick = game.tick + TRAVEL_TIME
+  local travel_time = get_travel_time()
+  local arrival_tick = game.tick + travel_time
   storage.players_in_transit[player.index] = {
     direction = "down",
     elevator_unit_number = elevator_data.unit_number,
@@ -218,7 +223,7 @@ function player_transport.travel_down(player, elevator_data)
 
   -- Immobilize player during transit
   player.character_running_speed_modifier = -1
-  player.print("[Space Elevator] Descending to surface... (" .. math.floor(TRAVEL_TIME / 60) .. " seconds)")
+  player.print("[Space Elevator] Descending to surface... (" .. math.floor(travel_time / 60) .. " seconds)")
 
   return true
 end

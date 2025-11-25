@@ -5,7 +5,16 @@ local platform_controller = require("scripts.platform-controller")
 
 local transfer_controller = {}
 
--- Default transfer rate (items per transfer operation)
+-- Get transfer rates from settings (runtime-global)
+local function get_auto_item_rate()
+  return settings.global["space-elevator-auto-transfer-rate"].value
+end
+
+local function get_fluid_rate()
+  return settings.global["space-elevator-manual-fluid-transfer"].value
+end
+
+-- Default fallback rates (used if settings not available)
 local DEFAULT_ITEM_RATE = 10
 local DEFAULT_FLUID_RATE = 1000  -- Fluid units per transfer
 
@@ -387,9 +396,10 @@ end
 
 -- Get fluid status for GUI
 function transfer_controller.get_fluid_status(elevator_data)
+  local tank_capacity = settings.startup["space-elevator-fluid-tank-capacity"].value
   local status = {
-    elevator = {fluid = nil, amount = 0, capacity = 25000, has_tank = false},
-    dock = {fluid = nil, amount = 0, capacity = 25000, has_tank = false},
+    elevator = {fluid = nil, amount = 0, capacity = tank_capacity, has_tank = false},
+    dock = {fluid = nil, amount = 0, capacity = tank_capacity, has_tank = false},
     connected = false,
   }
 

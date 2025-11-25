@@ -3,7 +3,26 @@
 
 local construction_stages = {}
 
--- Stage definitions
+-- Helper to get settings multipliers (cached for performance)
+local function get_time_multiplier()
+  return settings.startup["space-elevator-construction-time-multiplier"].value
+end
+
+local function get_cost_multiplier()
+  return settings.startup["space-elevator-material-cost-multiplier"].value
+end
+
+-- Apply cost multiplier to a material amount
+local function adjusted_cost(base_amount)
+  return math.ceil(base_amount * get_cost_multiplier())
+end
+
+-- Apply time multiplier to construction time
+local function adjusted_time(base_time)
+  return math.ceil(base_time * get_time_multiplier())
+end
+
+-- Stage definitions (base values - multipliers applied at runtime)
 -- Each stage has: name, description, required materials, and construction time (in ticks)
 -- Materials stored in companion chest (no weight limits)
 construction_stages.stages = {
@@ -72,9 +91,18 @@ construction_stages.stages = {
 construction_stages.STAGE_COUNT = 5
 construction_stages.STAGE_COMPLETE = 6  -- Stage number indicating fully built
 
--- Get stage info
+-- Get stage info (with adjusted construction time)
 function construction_stages.get_stage(stage_number)
-  return construction_stages.stages[stage_number]
+  local stage = construction_stages.stages[stage_number]
+  if not stage then return nil end
+
+  -- Return a copy with adjusted construction time
+  return {
+    name = stage.name,
+    description = stage.description,
+    materials = stage.materials,
+    construction_time = adjusted_time(stage.construction_time),
+  }
 end
 
 -- Get stage name
@@ -95,7 +123,7 @@ function construction_stages.get_inventory(chest)
   return chest.get_inventory(defines.inventory.chest)
 end
 
--- Check if all materials for a stage are provided
+-- Check if all materials for a stage are provided (with cost multiplier)
 -- chest: the companion chest entity (not the elevator)
 function construction_stages.check_materials(chest, stage_number)
   local stage = construction_stages.stages[stage_number]
@@ -104,10 +132,11 @@ function construction_stages.check_materials(chest, stage_number)
   local inventory = construction_stages.get_inventory(chest)
   if not inventory then return false end
 
-  -- Check each required material
+  -- Check each required material (with cost multiplier)
   for _, req in ipairs(stage.materials) do
     local count = inventory.get_item_count(req.name)
-    if count < req.amount then
+    local required = adjusted_cost(req.amount)
+    if count < required then
       return false
     end
   end
@@ -124,15 +153,16 @@ function construction_stages.consume_materials(chest, stage_number)
   local inventory = construction_stages.get_inventory(chest)
   if not inventory then return false end
 
-  -- Remove each required material
+  -- Remove each required material (with cost multiplier)
   for _, req in ipairs(stage.materials) do
-    inventory.remove({name = req.name, count = req.amount})
+    local required = adjusted_cost(req.amount)
+    inventory.remove({name = req.name, count = required})
   end
 
   return true
 end
 
--- Get material status for GUI display
+-- Get material status for GUI display (with cost multiplier)
 -- Returns table of {name, required, current, satisfied}
 -- chest: the companion chest entity (not the elevator)
 function construction_stages.get_material_status(chest, stage_number)
@@ -143,19 +173,20 @@ function construction_stages.get_material_status(chest, stage_number)
   local status = {}
 
   for _, req in ipairs(stage.materials) do
+    local required = adjusted_cost(req.amount)
     local current = inventory and inventory.get_item_count(req.name) or 0
     table.insert(status, {
       name = req.name,
-      required = req.amount,
-      current = math.min(current, req.amount),  -- Cap at required for display
-      satisfied = current >= req.amount,
+      required = required,
+      current = math.min(current, required),  -- Cap at required for display
+      satisfied = current >= required,
     })
   end
 
   return status
 end
 
--- Calculate overall material progress (0-1) for a stage
+-- Calculate overall material progress (0-1) for a stage (with cost multiplier)
 -- chest: the companion chest entity (not the elevator)
 function construction_stages.get_material_progress(chest, stage_number)
   local stage = construction_stages.stages[stage_number]
@@ -168,9 +199,10 @@ function construction_stages.get_material_progress(chest, stage_number)
   local total_provided = 0
 
   for _, req in ipairs(stage.materials) do
-    total_required = total_required + req.amount
+    local required = adjusted_cost(req.amount)
+    total_required = total_required + required
     local current = inventory.get_item_count(req.name)
-    total_provided = total_provided + math.min(current, req.amount)
+    total_provided = total_provided + math.min(current, required)
   end
 
   if total_required == 0 then return 1 end

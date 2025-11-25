@@ -6,6 +6,11 @@
 -- - Reuses rocket silo graphics
 -- - Launch mechanics are same as rocket silo
 
+-- Get settings values
+local power_consumption = settings.startup["space-elevator-power-consumption"].value
+local rocket_parts = settings.startup["space-elevator-rocket-parts"].value
+local fluid_tank_capacity = settings.startup["space-elevator-fluid-tank-capacity"].value
+
 -- Copy the rocket silo as our base
 local space_elevator = table.deepcopy(data.raw["rocket-silo"]["rocket-silo"])
 
@@ -13,12 +18,12 @@ local space_elevator = table.deepcopy(data.raw["rocket-silo"]["rocket-silo"])
 space_elevator.name = "space-elevator"
 space_elevator.minable.result = "space-elevator"
 
--- Key difference: Only 1 rocket part required per launch
+-- Key difference: Configurable rocket parts required per launch
 -- This makes launches much cheaper than standard rocket silo (100 parts)
-space_elevator.rocket_parts_required = 1
+space_elevator.rocket_parts_required = rocket_parts
 
--- Higher constant energy consumption (late game should have power infrastructure)
-space_elevator.energy_usage = "10MW"  -- Significant constant draw vs 250kW for rocket silo
+-- Configurable energy consumption (late game should have power infrastructure)
+space_elevator.energy_usage = power_consumption .. "MW"  -- Significant constant draw vs 250kW for rocket silo
 
 -- Increase inventory size for construction materials
 -- Default rocket silo has very limited cargo space, we need more for construction stages
@@ -123,7 +128,7 @@ elevator_fluid_tank.name = "space-elevator-fluid-tank"
 elevator_fluid_tank.minable = nil  -- Cannot be mined separately (linked to elevator)
 elevator_fluid_tank.max_health = 500
 elevator_fluid_tank.fluid_box = {
-  volume = 25000,  -- 25,000 units capacity
+  volume = fluid_tank_capacity,  -- Configurable capacity
   pipe_connections = {
     {flow_direction = "input-output", direction = defines.direction.north, position = {0, -1}},
     {flow_direction = "input-output", direction = defines.direction.south, position = {0, 1}},
@@ -151,7 +156,7 @@ dock_fluid_tank.name = "space-elevator-dock-fluid-tank"
 dock_fluid_tank.minable = {mining_time = 0.5, result = "space-elevator-dock-fluid-tank"}
 dock_fluid_tank.max_health = 300
 dock_fluid_tank.fluid_box = {
-  volume = 25000,  -- Match elevator tank
+  volume = fluid_tank_capacity,  -- Match elevator tank (configurable)
   pipe_connections = {
     {flow_direction = "input-output", direction = defines.direction.north, position = {0, -1}},
     {flow_direction = "input-output", direction = defines.direction.south, position = {0, 1}},

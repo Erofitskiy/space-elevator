@@ -148,16 +148,18 @@ remote.add_interface("space_elevator", {
         }
       end
 
-      -- Debug button to skip construction (dev/testing only)
-      local debug_flow = tabs.construction.add{type = "flow", direction = "horizontal"}
-      debug_flow.style.top_margin = 20
-      debug_flow.add{
-        type = "button",
-        name = "elevator_debug_complete",
-        caption = "[DEBUG] Complete Construction",
-        style = "red_button",
-        tooltip = "Dev/testing only: Skip all construction stages and make elevator operational",
-      }
+      -- Debug button to skip construction (dev/testing only, controlled by setting)
+      if settings.global["space-elevator-show-debug-button"].value then
+        local debug_flow = tabs.construction.add{type = "flow", direction = "horizontal"}
+        debug_flow.style.top_margin = 20
+        debug_flow.add{
+          type = "button",
+          name = "elevator_debug_complete",
+          caption = "[DEBUG] Complete Construction",
+          style = "red_button",
+          tooltip = "Dev/testing only: Skip all construction stages and make elevator operational",
+        }
+      end
     end
 
     -- ========== Materials Tab ==========
@@ -466,20 +468,21 @@ remote.add_interface("space_elevator", {
           style = "bold_label",
         }.style.top_margin = 12
 
+        local manual_item_amount = settings.global["space-elevator-manual-item-transfer"].value
         local manual_flow = transfer_flow.add{type = "flow", direction = "horizontal"}
         manual_flow.style.horizontal_spacing = 8
 
         manual_flow.add{
           type = "button",
           name = "elevator_transfer_up",
-          caption = "Upload 10",
-          tooltip = "Transfer 10 items from surface to platform",
+          caption = "Upload " .. manual_item_amount,
+          tooltip = "Transfer " .. manual_item_amount .. " items from surface to platform",
         }
         manual_flow.add{
           type = "button",
           name = "elevator_transfer_down",
-          caption = "Download 10",
-          tooltip = "Transfer 10 items from platform to surface",
+          caption = "Download " .. manual_item_amount,
+          tooltip = "Transfer " .. manual_item_amount .. " items from platform to surface",
         }
 
         -- Auto transfer mode
@@ -576,6 +579,7 @@ remote.add_interface("space_elevator", {
           style = "bold_label",
         }.style.top_margin = 8
 
+        local manual_fluid_amount = settings.global["space-elevator-manual-fluid-transfer"].value
         local fluid_manual_flow = transfer_flow.add{type = "flow", direction = "horizontal"}
         fluid_manual_flow.style.horizontal_spacing = 8
 
@@ -585,15 +589,15 @@ remote.add_interface("space_elevator", {
         fluid_manual_flow.add{
           type = "button",
           name = "elevator_fluid_up",
-          caption = "Upload 1000",
-          tooltip = "Transfer 1000 fluid from surface to platform",
+          caption = "Upload " .. manual_fluid_amount,
+          tooltip = "Transfer " .. manual_fluid_amount .. " fluid from surface to platform",
           enabled = can_upload_fluid,
         }
         fluid_manual_flow.add{
           type = "button",
           name = "elevator_fluid_down",
-          caption = "Download 1000",
-          tooltip = "Transfer 1000 fluid from platform to surface",
+          caption = "Download " .. manual_fluid_amount,
+          tooltip = "Transfer " .. manual_fluid_amount .. " fluid from platform to surface",
           enabled = can_download_fluid,
         }
 
@@ -1144,7 +1148,8 @@ script.on_event(defines.events.on_gui_click, function(event)
     if entity and entity.valid then
       local elevator_data = elevator_controller.get_elevator_data(entity.unit_number)
       if elevator_data then
-        local result = transfer_controller.transfer_items_up(elevator_data, nil, 10)
+        local amount = settings.global["space-elevator-manual-item-transfer"].value
+        local result = transfer_controller.transfer_items_up(elevator_data, nil, amount)
         if result.total > 0 then
           player.print("[Space Elevator] Uploaded " .. result.total .. " items")
         elseif result.error then
@@ -1162,7 +1167,8 @@ script.on_event(defines.events.on_gui_click, function(event)
     if entity and entity.valid then
       local elevator_data = elevator_controller.get_elevator_data(entity.unit_number)
       if elevator_data then
-        local result = transfer_controller.transfer_items_down(elevator_data, nil, 10)
+        local amount = settings.global["space-elevator-manual-item-transfer"].value
+        local result = transfer_controller.transfer_items_down(elevator_data, nil, amount)
         if result.total > 0 then
           player.print("[Space Elevator] Downloaded " .. result.total .. " items")
         elseif result.error then
@@ -1185,7 +1191,8 @@ script.on_event(defines.events.on_gui_click, function(event)
   elseif element.name == "elevator_auto_up" then
     local entity = remote.call("entity_gui_lib", "get_entity", event.player_index)
     if entity and entity.valid then
-      transfer_controller.set_auto_transfer(entity.unit_number, "up", 10)
+      local rate = settings.global["space-elevator-auto-transfer-rate"].value
+      transfer_controller.set_auto_transfer(entity.unit_number, "up", rate)
       player.print("[Space Elevator] Auto-upload enabled")
       -- Don't refresh - causes tab to reset. GUI auto-updates every 20 ticks.
     end
@@ -1193,7 +1200,8 @@ script.on_event(defines.events.on_gui_click, function(event)
   elseif element.name == "elevator_auto_down" then
     local entity = remote.call("entity_gui_lib", "get_entity", event.player_index)
     if entity and entity.valid then
-      transfer_controller.set_auto_transfer(entity.unit_number, "down", 10)
+      local rate = settings.global["space-elevator-auto-transfer-rate"].value
+      transfer_controller.set_auto_transfer(entity.unit_number, "down", rate)
       player.print("[Space Elevator] Auto-download enabled")
       -- Don't refresh - causes tab to reset. GUI auto-updates every 20 ticks.
     end
@@ -1204,7 +1212,8 @@ script.on_event(defines.events.on_gui_click, function(event)
     if entity and entity.valid then
       local elevator_data = elevator_controller.get_elevator_data(entity.unit_number)
       if elevator_data then
-        local result = transfer_controller.transfer_fluids_up(elevator_data, 1000)
+        local amount = settings.global["space-elevator-manual-fluid-transfer"].value
+        local result = transfer_controller.transfer_fluids_up(elevator_data, amount)
         if result.transferred > 0 then
           player.print("[Space Elevator] Uploaded " .. math.floor(result.transferred) .. " " .. (result.fluid_name or "fluid"))
         elseif result.error then
@@ -1222,7 +1231,8 @@ script.on_event(defines.events.on_gui_click, function(event)
     if entity and entity.valid then
       local elevator_data = elevator_controller.get_elevator_data(entity.unit_number)
       if elevator_data then
-        local result = transfer_controller.transfer_fluids_down(elevator_data, 1000)
+        local amount = settings.global["space-elevator-manual-fluid-transfer"].value
+        local result = transfer_controller.transfer_fluids_down(elevator_data, amount)
         if result.transferred > 0 then
           player.print("[Space Elevator] Downloaded " .. math.floor(result.transferred) .. " " .. (result.fluid_name or "fluid"))
         elseif result.error then
