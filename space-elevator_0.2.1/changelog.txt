@@ -15,6 +15,10 @@ Date: 2025-11-26
     - Fixed dock inventory display only showing 10 slots instead of 48
     - Fixed fluid transfer buttons not appearing in Transfer tab
     - Fixed misleading "place Dock Fluid Tank" message when tank was empty
+    - Fixed Transfer tab resetting to Status tab when clicking transfer buttons
+    - Fixed slot counting showing item types instead of actual slots (7 stacks now shows 7, not 1)
+    - Fixed "Only callable on tabbed-pane" GUI crash when opening elevator
+    - Added live updates to Transfer tab inventory/fluid counts without resetting active tab
 
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.0
