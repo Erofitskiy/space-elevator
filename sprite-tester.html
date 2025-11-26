@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factorio Sprite Tester</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        h1 {
+            text-align: center;
+            color: #00d4ff;
+            margin-bottom: 30px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+        }
+
+        .main-panel {
+            background: #16213e;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .controls-panel {
+            background: #16213e;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .upload-zone {
+            border: 2px dashed #00d4ff;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .upload-zone:hover {
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .upload-zone.dragover {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: #fff;
+        }
+
+        .upload-zone input {
+            display: none;
+        }
+
+        .preview-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .animation-preview {
+            background: #000;
+            border: 2px solid #333;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            min-width: 200px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .animation-preview canvas {
+            image-rendering: pixelated;
+        }
+
+        .sprite-sheet-preview {
+            max-width: 100%;
+            overflow: auto;
+            border: 1px solid #333;
+            border-radius: 5px;
+            background: #000;
+        }
+
+        .sprite-sheet-preview img {
+            max-width: 100%;
+            display: block;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #00d4ff;
+            font-weight: bold;
+        }
+
+        .control-group input[type="number"],
+        .control-group input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            background: #0f0f23;
+            color: #fff;
+        }
+
+        .control-group input[type="range"] {
+            padding: 0;
+            height: 20px;
+        }
+
+        .inline-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #00d4ff;
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            background: #00a8cc;
+        }
+
+        .btn-secondary {
+            background: #333;
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background: #444;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stats {
+            background: #0f0f23;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .stats-label {
+            color: #888;
+        }
+
+        .stats-value {
+            color: #00d4ff;
+        }
+
+        .frame-indicator {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .background-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .bg-option {
+            width: 30px;
+            height: 30px;
+            border: 2px solid #333;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .bg-option:hover {
+            transform: scale(1.1);
+        }
+
+        .bg-option.active {
+            border-color: #00d4ff;
+        }
+
+        .bg-black { background: #000; }
+        .bg-dark { background: #1a1a1a; }
+        .bg-gray { background: #444; }
+        .bg-green { background: #0a3d0a; }
+        .bg-checker {
+            background: repeating-conic-gradient(#333 0% 25%, #666 0% 50%) 50% / 10px 10px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .detection-canvas {
+            display: none;
+        }
+
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .zoom-btn {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .playback-controls {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .playback-controls .btn {
+            flex: 1;
+            padding: 10px;
+        }
+
+        #currentFrameSlider {
+            margin-top: 10px;
+        }
+
+        .slider-value {
+            text-align: center;
+            font-family: monospace;
+            margin-top: 5px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <h1>Factorio Sprite Tester</h1>
+
+    <div class="container">
+        <div class="main-panel">
+            <div class="upload-zone" id="uploadZone">
+                <p>Drop sprite sheet here or click to upload</p>
+                <p style="color: #666; font-size: 12px;">Supports PNG, JPG, WebP</p>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+
+            <div class="preview-area">
+                <div class="zoom-controls">
+                    <button class="btn btn-secondary zoom-btn" id="zoomOut">-</button>
+                    <span id="zoomLevel">100%</span>
+                    <button class="btn btn-secondary zoom-btn" id="zoomIn">+</button>
+                    <button class="btn btn-secondary" id="zoomFit">Fit</button>
+                </div>
+
+                <div class="animation-preview" id="animationPreview">
+                    <canvas id="animationCanvas"></canvas>
+                    <div class="frame-indicator" id="frameIndicator">Frame: 0/0</div>
+                </div>
+
+                <div class="sprite-sheet-preview" id="sheetPreview">
+                    <canvas id="sheetCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls-panel">
+            <div class="control-group">
+                <label>Preview Background</label>
+                <div class="background-options">
+                    <div class="bg-option bg-black active" data-bg="#000000" title="Black"></div>
+                    <div class="bg-option bg-dark" data-bg="#1a1a1a" title="Dark"></div>
+                    <div class="bg-option bg-gray" data-bg="#444444" title="Gray"></div>
+                    <div class="bg-option bg-green" data-bg="#0a3d0a" title="Factorio Green"></div>
+                    <div class="bg-option bg-checker" data-bg="checker" title="Checkerboard"></div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Grid Configuration</label>
+                <div class="inline-controls">
+                    <div>
+                        <label style="font-size: 12px; color: #888;">Columns</label>
+                        <input type="number" id="gridCols" value="8" min="1" max="100">
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: #888;">Rows</label>
+                        <input type="number" id="gridRows" value="4" min="1" max="100">
+                    </div>
+                </div>
+                <button class="btn btn-secondary" id="autoDetect" style="width: 100%; margin-top: 10px;">
+                    Auto-Detect Grid
+                </button>
+            </div>
+
+            <div class="control-group">
+                <label>Animation Range</label>
+                <div class="inline-controls">
+                    <div>
+                        <label style="font-size: 12px; color: #888;">Start Frame</label>
+                        <input type="number" id="startFrame" value="0" min="0">
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: #888;">End Frame</label>
+                        <input type="number" id="endFrame" value="31" min="0">
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Animation Speed (FPS): <span id="fpsValue">15</span></label>
+                <input type="range" id="fpsSlider" min="1" max="60" value="15">
+            </div>
+
+            <div class="control-group">
+                <label>Manual Frame Scrub</label>
+                <input type="range" id="currentFrameSlider" min="0" max="31" value="0">
+                <div class="slider-value" id="scrubValue">Frame 0</div>
+            </div>
+
+            <div class="playback-controls">
+                <button class="btn btn-secondary" id="prevFrame">◀◀</button>
+                <button class="btn btn-primary" id="playPause">▶ Play</button>
+                <button class="btn btn-secondary" id="nextFrame">▶▶</button>
+            </div>
+
+            <div class="control-group">
+                <label>Sprite Info</label>
+                <div class="stats" id="stats">
+                    <div class="stats-row">
+                        <span class="stats-label">Image Size:</span>
+                        <span class="stats-value" id="statSize">-</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label">Frame Size:</span>
+                        <span class="stats-value" id="statFrame">-</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label">Total Frames:</span>
+                        <span class="stats-value" id="statTotal">-</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label">Playing:</span>
+                        <span class="stats-value" id="statPlaying">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Show Grid Overlay</label>
+                <button class="btn btn-secondary" id="toggleGrid" style="width: 100%;">
+                    Toggle Grid Lines
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <canvas class="detection-canvas" id="detectionCanvas"></canvas>
+
+    <script>
+        // State
+        let spriteSheet = null;
+        let gridCols = 8;
+        let gridRows = 4;
+        let frameWidth = 0;
+        let frameHeight = 0;
+        let currentFrame = 0;
+        let startFrame = 0;
+        let endFrame = 31;
+        let fps = 15;
+        let isPlaying = false;
+        let animationId = null;
+        let lastFrameTime = 0;
+        let zoom = 1;
+        let showGrid = false;
+        let backgroundColor = '#000000';
+
+        // DOM Elements
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const animationCanvas = document.getElementById('animationCanvas');
+        const animationCtx = animationCanvas.getContext('2d');
+        const sheetCanvas = document.getElementById('sheetCanvas');
+        const sheetCtx = sheetCanvas.getContext('2d');
+        const detectionCanvas = document.getElementById('detectionCanvas');
+        const detectionCtx = detectionCanvas.getContext('2d');
+        const animationPreview = document.getElementById('animationPreview');
+        const frameIndicator = document.getElementById('frameIndicator');
+
+        // File Upload
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                loadImage(file);
+            }
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                loadImage(e.target.files[0]);
+            }
+        });
+
+        function loadImage(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    spriteSheet = img;
+                    autoDetectGrid();
+                    updateStats();
+                    drawSheetPreview();
+                    resetAnimation();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function autoDetectGrid() {
+            if (!spriteSheet) return;
+
+            detectionCanvas.width = spriteSheet.width;
+            detectionCanvas.height = spriteSheet.height;
+            detectionCtx.drawImage(spriteSheet, 0, 0);
+
+            const imageData = detectionCtx.getImageData(0, 0, spriteSheet.width, spriteSheet.height);
+            const data = imageData.data;
+
+            // Find content bounds per column to detect frame width
+            const threshold = 10;
+            const columnHasContent = new Array(spriteSheet.width).fill(false);
+            const rowHasContent = new Array(spriteSheet.height).fill(false);
+
+            for (let y = 0; y < spriteSheet.height; y++) {
+                for (let x = 0; x < spriteSheet.width; x++) {
+                    const i = (y * spriteSheet.width + x) * 4;
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    const a = data[i + 3];
+
+                    // Check if pixel is not black/transparent
+                    if (a > 10 && (r > threshold || g > threshold || b > threshold)) {
+                        columnHasContent[x] = true;
+                        rowHasContent[y] = true;
+                    }
+                }
+            }
+
+            // Find gaps in columns to detect frame boundaries
+            const colGaps = findGaps(columnHasContent);
+            const rowGaps = findGaps(rowHasContent);
+
+            if (colGaps.length > 1) {
+                gridCols = colGaps.length;
+                frameWidth = Math.round(spriteSheet.width / gridCols);
+            } else {
+                // Fallback: assume square frames
+                const aspectRatio = spriteSheet.width / spriteSheet.height;
+                if (aspectRatio >= 1) {
+                    gridCols = Math.round(aspectRatio * 4);
+                    frameWidth = Math.round(spriteSheet.width / gridCols);
+                } else {
+                    gridCols = 1;
+                    frameWidth = spriteSheet.width;
+                }
+            }
+
+            if (rowGaps.length > 1) {
+                gridRows = rowGaps.length;
+                frameHeight = Math.round(spriteSheet.height / gridRows);
+            } else {
+                frameHeight = spriteSheet.height;
+                gridRows = 1;
+            }
+
+            // Update UI
+            document.getElementById('gridCols').value = gridCols;
+            document.getElementById('gridRows').value = gridRows;
+
+            const totalFrames = gridCols * gridRows;
+            endFrame = totalFrames - 1;
+            document.getElementById('startFrame').value = 0;
+            document.getElementById('endFrame').value = endFrame;
+            document.getElementById('currentFrameSlider').max = endFrame;
+
+            updateStats();
+        }
+
+        function findGaps(contentArray) {
+            const segments = [];
+            let inContent = false;
+            let segmentStart = 0;
+
+            for (let i = 0; i < contentArray.length; i++) {
+                if (contentArray[i] && !inContent) {
+                    inContent = true;
+                    segmentStart = i;
+                } else if (!contentArray[i] && inContent) {
+                    inContent = false;
+                    segments.push({ start: segmentStart, end: i });
+                }
+            }
+
+            if (inContent) {
+                segments.push({ start: segmentStart, end: contentArray.length });
+            }
+
+            return segments;
+        }
+
+        function updateStats() {
+            if (!spriteSheet) return;
+
+            document.getElementById('statSize').textContent = `${spriteSheet.width} x ${spriteSheet.height}`;
+            document.getElementById('statFrame').textContent = `${frameWidth} x ${frameHeight}`;
+            document.getElementById('statTotal').textContent = gridCols * gridRows;
+            document.getElementById('statPlaying').textContent = `${startFrame} - ${endFrame}`;
+        }
+
+        function drawSheetPreview() {
+            if (!spriteSheet) return;
+
+            sheetCanvas.width = spriteSheet.width;
+            sheetCanvas.height = spriteSheet.height;
+            sheetCtx.drawImage(spriteSheet, 0, 0);
+
+            if (showGrid) {
+                sheetCtx.strokeStyle = 'rgba(0, 212, 255, 0.5)';
+                sheetCtx.lineWidth = 1;
+
+                for (let x = 0; x <= gridCols; x++) {
+                    sheetCtx.beginPath();
+                    sheetCtx.moveTo(x * frameWidth, 0);
+                    sheetCtx.lineTo(x * frameWidth, spriteSheet.height);
+                    sheetCtx.stroke();
+                }
+
+                for (let y = 0; y <= gridRows; y++) {
+                    sheetCtx.beginPath();
+                    sheetCtx.moveTo(0, y * frameHeight);
+                    sheetCtx.lineTo(spriteSheet.width, y * frameHeight);
+                    sheetCtx.stroke();
+                }
+            }
+
+            // Highlight current frame
+            const col = currentFrame % gridCols;
+            const row = Math.floor(currentFrame / gridCols);
+            sheetCtx.strokeStyle = '#00d4ff';
+            sheetCtx.lineWidth = 2;
+            sheetCtx.strokeRect(col * frameWidth, row * frameHeight, frameWidth, frameHeight);
+        }
+
+        function drawFrame() {
+            if (!spriteSheet) return;
+
+            const displayWidth = frameWidth * zoom;
+            const displayHeight = frameHeight * zoom;
+
+            animationCanvas.width = displayWidth;
+            animationCanvas.height = displayHeight;
+
+            // Draw background
+            if (backgroundColor === 'checker') {
+                const size = 10 * zoom;
+                for (let y = 0; y < displayHeight; y += size) {
+                    for (let x = 0; x < displayWidth; x += size) {
+                        animationCtx.fillStyle = ((x / size + y / size) % 2 === 0) ? '#333' : '#666';
+                        animationCtx.fillRect(x, y, size, size);
+                    }
+                }
+            } else {
+                animationCtx.fillStyle = backgroundColor;
+                animationCtx.fillRect(0, 0, displayWidth, displayHeight);
+            }
+
+            // Calculate source position
+            const col = currentFrame % gridCols;
+            const row = Math.floor(currentFrame / gridCols);
+            const sx = col * frameWidth;
+            const sy = row * frameHeight;
+
+            // Draw frame
+            animationCtx.imageSmoothingEnabled = false;
+            animationCtx.drawImage(
+                spriteSheet,
+                sx, sy, frameWidth, frameHeight,
+                0, 0, displayWidth, displayHeight
+            );
+
+            frameIndicator.textContent = `Frame: ${currentFrame}/${gridCols * gridRows - 1}`;
+        }
+
+        function animate(timestamp) {
+            if (!isPlaying) return;
+
+            const frameInterval = 1000 / fps;
+
+            if (timestamp - lastFrameTime >= frameInterval) {
+                currentFrame++;
+                if (currentFrame > endFrame) {
+                    currentFrame = startFrame;
+                }
+
+                drawFrame();
+                drawSheetPreview();
+                document.getElementById('currentFrameSlider').value = currentFrame;
+                document.getElementById('scrubValue').textContent = `Frame ${currentFrame}`;
+                lastFrameTime = timestamp;
+            }
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function resetAnimation() {
+            currentFrame = startFrame;
+            drawFrame();
+            drawSheetPreview();
+        }
+
+        // Controls
+        document.getElementById('playPause').addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            document.getElementById('playPause').textContent = isPlaying ? '⏸ Pause' : '▶ Play';
+
+            if (isPlaying) {
+                lastFrameTime = performance.now();
+                animationId = requestAnimationFrame(animate);
+            } else if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+        });
+
+        document.getElementById('prevFrame').addEventListener('click', () => {
+            currentFrame--;
+            if (currentFrame < startFrame) currentFrame = endFrame;
+            drawFrame();
+            drawSheetPreview();
+            document.getElementById('currentFrameSlider').value = currentFrame;
+            document.getElementById('scrubValue').textContent = `Frame ${currentFrame}`;
+        });
+
+        document.getElementById('nextFrame').addEventListener('click', () => {
+            currentFrame++;
+            if (currentFrame > endFrame) currentFrame = startFrame;
+            drawFrame();
+            drawSheetPreview();
+            document.getElementById('currentFrameSlider').value = currentFrame;
+            document.getElementById('scrubValue').textContent = `Frame ${currentFrame}`;
+        });
+
+        document.getElementById('fpsSlider').addEventListener('input', (e) => {
+            fps = parseInt(e.target.value);
+            document.getElementById('fpsValue').textContent = fps;
+        });
+
+        document.getElementById('currentFrameSlider').addEventListener('input', (e) => {
+            currentFrame = parseInt(e.target.value);
+            document.getElementById('scrubValue').textContent = `Frame ${currentFrame}`;
+            drawFrame();
+            drawSheetPreview();
+        });
+
+        document.getElementById('gridCols').addEventListener('change', (e) => {
+            gridCols = parseInt(e.target.value);
+            if (spriteSheet) {
+                frameWidth = Math.floor(spriteSheet.width / gridCols);
+                const totalFrames = gridCols * gridRows;
+                document.getElementById('endFrame').value = totalFrames - 1;
+                document.getElementById('currentFrameSlider').max = totalFrames - 1;
+                endFrame = totalFrames - 1;
+                if (currentFrame > endFrame) currentFrame = 0;
+                updateStats();
+                drawFrame();
+                drawSheetPreview();
+            }
+        });
+
+        document.getElementById('gridRows').addEventListener('change', (e) => {
+            gridRows = parseInt(e.target.value);
+            if (spriteSheet) {
+                frameHeight = Math.floor(spriteSheet.height / gridRows);
+                const totalFrames = gridCols * gridRows;
+                document.getElementById('endFrame').value = totalFrames - 1;
+                document.getElementById('currentFrameSlider').max = totalFrames - 1;
+                endFrame = totalFrames - 1;
+                if (currentFrame > endFrame) currentFrame = 0;
+                updateStats();
+                drawFrame();
+                drawSheetPreview();
+            }
+        });
+
+        document.getElementById('startFrame').addEventListener('change', (e) => {
+            startFrame = parseInt(e.target.value);
+            if (currentFrame < startFrame) currentFrame = startFrame;
+            document.getElementById('currentFrameSlider').min = startFrame;
+            updateStats();
+        });
+
+        document.getElementById('endFrame').addEventListener('change', (e) => {
+            endFrame = parseInt(e.target.value);
+            if (currentFrame > endFrame) currentFrame = endFrame;
+            document.getElementById('currentFrameSlider').max = endFrame;
+            updateStats();
+        });
+
+        document.getElementById('autoDetect').addEventListener('click', autoDetectGrid);
+
+        document.getElementById('toggleGrid').addEventListener('click', () => {
+            showGrid = !showGrid;
+            drawSheetPreview();
+        });
+
+        // Background options
+        document.querySelectorAll('.bg-option').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.bg-option').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                backgroundColor = btn.dataset.bg;
+                drawFrame();
+            });
+        });
+
+        // Zoom controls
+        document.getElementById('zoomIn').addEventListener('click', () => {
+            zoom = Math.min(zoom * 1.5, 8);
+            document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+            drawFrame();
+        });
+
+        document.getElementById('zoomOut').addEventListener('click', () => {
+            zoom = Math.max(zoom / 1.5, 0.25);
+            document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+            drawFrame();
+        });
+
+        document.getElementById('zoomFit').addEventListener('click', () => {
+            if (!spriteSheet) return;
+            const container = animationPreview;
+            const maxSize = Math.min(container.clientWidth - 40, container.clientHeight - 40);
+            zoom = Math.min(maxSize / frameWidth, maxSize / frameHeight, 4);
+            document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+            drawFrame();
+        });
+    </script>
+</body>
+</html>
