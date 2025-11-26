@@ -1,4 +1,22 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.2.2
+Date: 2025-11-26
+  Features:
+    - Transfer beam visual effects - colored beams appear when items/fluids are transferred
+        - Surface side: beam shoots upward from elevator into the sky
+        - Platform side: beam shoots up from below, visible in empty space under the platform
+    - Different beam colors for transfer types:
+        - Item upload: Blue
+        - Item download: Orange
+        - Fluid upload: Cyan/teal
+        - Fluid download: Dark orange
+    - Dynamic platform edge detection for accurate beam positioning
+  Technical:
+    - New visual-effects.lua script module for rendering effects
+    - Platform bottom edge caching (5-second cache) for performance
+    - Beam rendering uses LuaRendering.draw_line with dual-layer effect (outer + inner core)
+
+---------------------------------------------------------------------------------------------------
 Version: 0.2.1
 Date: 2025-11-26
   Features:

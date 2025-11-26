@@ -106,6 +106,147 @@ function visual_effects.draw_fluid_download_beam(entity)
 end
 
 -- ============================================================================
+-- Platform-side Beam Effects
+-- ============================================================================
+
+-- Find the bottom edge of the platform (maximum Y coordinate of tiles)
+-- Caches the result per surface to avoid expensive tile searches every transfer
+local platform_bottom_cache = {}
+
+local function get_platform_bottom_edge(surface, dock_pos)
+  local surface_index = surface.index
+
+  -- Check cache first (cache for 5 seconds / 300 ticks)
+  local cached = platform_bottom_cache[surface_index]
+  if cached and (game.tick - cached.tick) < 300 then
+    return cached.bottom_y
+  end
+
+  -- Search for tiles in a column below the dock to find where platform ends
+  -- We search in a narrow vertical strip centered on the dock's X position
+  local search_area = {
+    left_top = {x = dock_pos.x - 2, y = dock_pos.y},
+    right_bottom = {x = dock_pos.x + 2, y = dock_pos.y + 100}
+  }
+
+  local tiles = surface.find_tiles_filtered{
+    area = search_area,
+    -- No filter - get all non-space tiles (space tiles have name "out-of-map" or similar)
+  }
+
+  -- Find the maximum Y (bottom-most tile)
+  -- Only count actual platform tiles, not empty space
+  local max_y = dock_pos.y
+  for _, tile in pairs(tiles) do
+    local tile_name = tile.name
+    -- Skip empty/space tiles (they typically have "out-of-map" or "empty-space" names)
+    if tile_name and not tile_name:find("out%-of%-map") and not tile_name:find("empty") then
+      if tile.position.y > max_y then
+        max_y = tile.position.y
+      end
+    end
+  end
+
+  -- Add a small buffer (tile is 1x1, so add 1 to get to the actual edge)
+  local bottom_y = max_y + 1
+
+  -- Cache the result
+  platform_bottom_cache[surface_index] = {
+    bottom_y = bottom_y,
+    tick = game.tick
+  }
+
+  return bottom_y
+end
+
+-- Draw a transfer beam at the platform dock (comes from below, visible in empty space)
+-- @param dock_entity: The dock entity on the platform
+-- @param direction: "upload" or "download"
+-- @param is_fluid: boolean, true for fluid transfers
+function visual_effects.draw_platform_beam(dock_entity, direction, is_fluid)
+  if not dock_entity or not dock_entity.valid then return end
+
+  -- Select beam configuration
+  local config_key = direction
+  if is_fluid then
+    config_key = "fluid_" .. direction
+  end
+  local config = BEAM_CONFIG[config_key] or BEAM_CONFIG.upload
+
+  local dock_pos = dock_entity.position
+  local surface = dock_entity.surface
+
+  -- Find the actual bottom edge of the platform
+  local platform_bottom = get_platform_bottom_edge(surface, dock_pos)
+
+  -- Calculate beam endpoints
+  -- Beam comes from deep in empty space below and ends just at the platform edge
+  local from_pos = {
+    x = dock_pos.x,
+    y = platform_bottom + 100,  -- Start from 100 tiles below the platform edge
+  }
+
+  local to_pos = {
+    x = dock_pos.x,
+    y = platform_bottom + 2,  -- End just below the platform edge (small gap)
+  }
+
+  -- Draw the main beam (render_layer zero since we're in empty space)
+  rendering.draw_line{
+    surface = surface,
+    from = from_pos,
+    to = to_pos,
+    color = config.color,
+    width = config.width,
+    time_to_live = config.time_to_live,
+    render_layer = "zero",
+  }
+
+  -- Draw a thinner inner beam for a "core" effect
+  local inner_color = {
+    r = math.min(1, config.color.r + 0.3),
+    g = math.min(1, config.color.g + 0.3),
+    b = math.min(1, config.color.b + 0.3),
+    a = config.color.a * 0.6,
+  }
+  rendering.draw_line{
+    surface = surface,
+    from = from_pos,
+    to = to_pos,
+    color = inner_color,
+    width = math.max(1, config.width - 2),
+    time_to_live = config.time_to_live,
+    render_layer = "zero",
+  }
+end
+
+-- ============================================================================
+-- Combined Beam Effects (surface + platform)
+-- ============================================================================
+
+-- Draw beams on both surface and platform for item transfers
+function visual_effects.draw_item_upload_beam_both(elevator_entity, dock_entity)
+  visual_effects.draw_transfer_beam(elevator_entity, "upload", false)
+  visual_effects.draw_platform_beam(dock_entity, "upload", false)
+end
+
+function visual_effects.draw_item_download_beam_both(elevator_entity, dock_entity)
+  visual_effects.draw_transfer_beam(elevator_entity, "download", false)
+  visual_effects.draw_platform_beam(dock_entity, "download", false)
+end
+
+-- Draw beams on both surface and platform for fluid transfers
+function visual_effects.draw_fluid_upload_beam_both(elevator_entity, dock_entity)
+  visual_effects.draw_transfer_beam(elevator_entity, "upload", true)
+  visual_effects.draw_platform_beam(dock_entity, "upload", true)
+end
+
+function visual_effects.draw_fluid_download_beam_both(elevator_entity, dock_entity)
+  visual_effects.draw_transfer_beam(elevator_entity, "download", true)
+  visual_effects.draw_platform_beam(dock_entity, "download", true)
+end
+
+-- ============================================================================
 -- Batch/Throttled Effects (for auto-transfers)
 -- ============================================================================
 

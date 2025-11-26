@@ -6,7 +6,7 @@ A Factorio 2.0 / Space Age mod that adds space elevators to planets, providing a
 
 **Core Concept:** An expensive, multi-stage construction that acts as a fast, low-cost (or free) rocket silo alternative for late-game players.
 
-**Current Version:** 0.2.1
+**Current Version:** 0.2.2
 
 ---
 
@@ -172,7 +172,7 @@ Stage 5: Activation & Calibration
 
 ---
 
-## Phase 5: Polish & Compatibility - NOT STARTED
+## Phase 5: Polish & Compatibility - IN PROGRESS
 
 ### Goals
 - [ ] Final graphics and animations
@@ -331,6 +331,7 @@ space-elevator_0.2.1/
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2025-11-26 | 0.2.2 | Phase 5 started - Transfer beam visual effects |
 | 2025-11-26 | 0.2.1 | Bug fixes, fluid UI, dock GUI improvements |
 | 2025-11-26 | 0.2.0 | Phase 4 complete - Docking, transfers, player transport |
 | 2025-11-26 | 0.1.0 | Initial release - Phases 1 & 2 complete |
