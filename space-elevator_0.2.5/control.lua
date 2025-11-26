@@ -427,49 +427,56 @@ remote.add_interface("space_elevator", {
     if is_complete and tabs.transfer then
       local is_connected = elevator_data.connection_status == "connected"
 
-      tabs.transfer.add{
-        type = "label",
-        caption = "Cargo Transfer",
-        style = "caption_label",
-      }
-
-      local transfer_flow = tabs.transfer.add{type = "flow", direction = "vertical"}
-      transfer_flow.style.top_margin = 8
-      transfer_flow.style.vertical_spacing = 4
-
       if not is_connected then
-        transfer_flow.add{
+        tabs.transfer.add{
           type = "label",
           caption = "Connect to a platform to enable transfers.",
           style = "bold_red_label",
         }
       else
+        -- Create two-column layout for Cargo and Fluid transfers
+        local columns = remote.call("entity_gui_lib", "create_columns", tabs.transfer, {
+          column_count = 2,
+          spacing = 16,
+          vertical_spacing = 4,
+        })
+
+        local cargo_column = columns[1]
+        local fluid_column = columns[2]
+
+        -- ========== Cargo Transfer Column ==========
+        cargo_column.add{
+          type = "label",
+          caption = "Cargo Transfer",
+          style = "caption_label",
+        }
+
         -- Show inventory status
         local status = transfer_controller.get_inventory_status(elevator_data)
 
         -- Elevator inventory summary
-        transfer_flow.add{
+        cargo_column.add{
           type = "label",
           name = "elevator_surface_storage_label",
           caption = {"", "Surface Storage: ", status.elevator.used_slots, "/", status.elevator.total_slots, " slots used"},
         }
 
         -- Dock inventory summary
-        transfer_flow.add{
+        cargo_column.add{
           type = "label",
           name = "elevator_dock_storage_label",
           caption = {"", "Platform Dock: ", status.dock.used_slots, "/", status.dock.total_slots, " slots used"},
         }
 
         -- Manual transfer buttons
-        transfer_flow.add{
+        cargo_column.add{
           type = "label",
           caption = "Manual Transfer:",
           style = "bold_label",
         }.style.top_margin = 12
 
         local manual_item_amount = settings.global["space-elevator-manual-item-transfer"].value
-        local manual_flow = transfer_flow.add{type = "flow", direction = "horizontal"}
+        local manual_flow = cargo_column.add{type = "flow", direction = "horizontal"}
         manual_flow.style.horizontal_spacing = 8
 
         manual_flow.add{
@@ -486,7 +493,7 @@ remote.add_interface("space_elevator", {
         }
 
         -- Auto transfer mode
-        transfer_flow.add{
+        cargo_column.add{
           type = "label",
           caption = "Automatic Transfer:",
           style = "bold_label",
@@ -495,7 +502,7 @@ remote.add_interface("space_elevator", {
         local auto_config = transfer_controller.get_auto_transfer(entity.unit_number)
         local current_mode = auto_config and auto_config.mode or "off"
 
-        local auto_flow = transfer_flow.add{type = "flow", direction = "horizontal"}
+        local auto_flow = cargo_column.add{type = "flow", direction = "horizontal"}
         auto_flow.style.horizontal_spacing = 4
 
         auto_flow.add{
@@ -522,14 +529,14 @@ remote.add_interface("space_elevator", {
 
         -- Status message
         if current_mode ~= "off" then
-          transfer_flow.add{
+          cargo_column.add{
             type = "label",
             caption = {"", "Auto-transfer active: ", current_mode == "up" and "Uploading" or "Downloading"},
           }.style.top_margin = 4
         end
 
         -- ========== Transfer Rate Settings ==========
-        transfer_flow.add{
+        cargo_column.add{
           type = "label",
           caption = "Transfer Rate:",
           style = "bold_label",
@@ -542,7 +549,7 @@ remote.add_interface("space_elevator", {
         local energy_per_item = 10000  -- 10kJ in joules
         local energy_cost_kj = (current_rate * energy_per_item) / 1000  -- Convert to kJ
 
-        local rate_flow = transfer_flow.add{type = "flow", direction = "horizontal"}
+        local rate_flow = cargo_column.add{type = "flow", direction = "horizontal"}
         rate_flow.style.horizontal_spacing = 8
         rate_flow.style.vertical_align = "center"
 
@@ -571,7 +578,7 @@ remote.add_interface("space_elevator", {
         }
 
         -- Show energy cost
-        transfer_flow.add{
+        cargo_column.add{
           type = "label",
           name = "elevator_energy_cost_label",
           caption = {"", "Energy cost: ", string.format("%.0f kJ", energy_cost_kj), " per transfer cycle"},
@@ -580,7 +587,7 @@ remote.add_interface("space_elevator", {
         -- Show current energy level
         local current_energy_kj = (entity.energy or 0) / 1000
         local max_energy_kj = (entity.electric_buffer_size or 0) / 1000
-        local energy_label = transfer_flow.add{
+        local energy_label = cargo_column.add{
           type = "label",
           name = "elevator_current_energy_label",
           caption = {"", "Available: ", string.format("%.0f / %.0f kJ", current_energy_kj, max_energy_kj)},
@@ -589,16 +596,12 @@ remote.add_interface("space_elevator", {
           energy_label.style.font_color = {1, 0.3, 0.3}  -- Red when insufficient
         end
 
-        -- ========== Fluid Transfer Section ==========
-        transfer_flow.add{
-          type = "line",
-        }.style.top_margin = 12
-
-        transfer_flow.add{
+        -- ========== Fluid Transfer Column ==========
+        fluid_column.add{
           type = "label",
           caption = "Fluid Transfer",
           style = "caption_label",
-        }.style.top_margin = 8
+        }
 
         -- Get fluid status
         local fluid_status = transfer_controller.get_fluid_status(elevator_data)
@@ -612,7 +615,7 @@ remote.add_interface("space_elevator", {
             elevator_fluid_text = "Empty (0 / " .. fluid_status.elevator.capacity .. ")"
           end
         end
-        transfer_flow.add{
+        fluid_column.add{
           type = "label",
           name = "elevator_surface_fluid_label",
           caption = {"", "Surface Tank: ", elevator_fluid_text},
@@ -627,21 +630,21 @@ remote.add_interface("space_elevator", {
             dock_fluid_text = "Empty (0 / " .. fluid_status.dock.capacity .. ")"
           end
         end
-        transfer_flow.add{
+        fluid_column.add{
           type = "label",
           name = "elevator_dock_fluid_label",
           caption = {"", "Platform Tank: ", dock_fluid_text},
         }
 
         -- Manual fluid transfer buttons
-        transfer_flow.add{
+        fluid_column.add{
           type = "label",
           caption = "Manual Fluid Transfer:",
           style = "bold_label",
-        }.style.top_margin = 8
+        }.style.top_margin = 12
 
         local manual_fluid_amount = settings.global["space-elevator-manual-fluid-transfer"].value
-        local fluid_manual_flow = transfer_flow.add{type = "flow", direction = "horizontal"}
+        local fluid_manual_flow = fluid_column.add{type = "flow", direction = "horizontal"}
         fluid_manual_flow.style.horizontal_spacing = 8
 
         local can_upload_fluid = fluid_status.elevator.fluid ~= nil
@@ -662,10 +665,10 @@ remote.add_interface("space_elevator", {
           enabled = can_download_fluid,
         }
 
-        transfer_flow.add{
+        fluid_column.add{
           type = "label",
           caption = "Connect pipes to the fluid tank north of the elevator.",
-        }.style.top_margin = 4
+        }.style.top_margin = 8
       end
     end
 
