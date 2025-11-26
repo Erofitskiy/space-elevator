@@ -162,3 +162,58 @@ dock_fluid_tank.localised_name = {"entity-name.space-elevator-dock-fluid-tank"}
 dock_fluid_tank.localised_description = {"entity-description.space-elevator-dock-fluid-tank"}
 
 data:extend({dock_fluid_tank})
+
+-- ============================================================================
+-- Transfer Beam Animation (Visual Effects)
+-- ============================================================================
+-- Animated lightning beam sprite for item/fluid transfers between
+-- surface elevator and orbital platform.
+
+data:extend({
+  {
+    type = "animation",
+    name = "space-elevator-beam-blue",
+    filename = "__space-elevator__/graphics/beam-animation.png",
+    width = 128,
+    height = 256,
+    frame_count = 32,
+    line_length = 8,
+    animation_speed = 0.5,  -- 30 fps (0.5 frames per tick at 60 ticks/sec)
+    scale = 0.5,            -- Scale down for better fit
+    blend_mode = "additive",
+    draw_as_glow = true,
+    flags = {"no-crop"},
+  },
+  -- Orange tinted version for downloads (will apply tint at runtime)
+  {
+    type = "animation",
+    name = "space-elevator-beam-orange",
+    filename = "__space-elevator__/graphics/beam-animation.png",
+    width = 128,
+    height = 256,
+    frame_count = 32,
+    line_length = 8,
+    animation_speed = 0.5,
+    scale = 0.5,
+    blend_mode = "additive",
+    draw_as_glow = true,
+    tint = {r = 1.0, g = 0.6, b = 0.2, a = 1.0},  -- Orange tint
+    flags = {"no-crop"},
+  },
+  -- Cyan version for fluid transfers
+  {
+    type = "animation",
+    name = "space-elevator-beam-cyan",
+    filename = "__space-elevator__/graphics/beam-animation.png",
+    width = 128,
+    height = 256,
+    frame_count = 32,
+    line_length = 8,
+    animation_speed = 0.5,
+    scale = 0.5,
+    blend_mode = "additive",
+    draw_as_glow = true,
+    tint = {r = 0.2, g = 1.0, b = 1.0, a = 1.0},  -- Cyan tint
+    flags = {"no-crop"},
+  },
+})

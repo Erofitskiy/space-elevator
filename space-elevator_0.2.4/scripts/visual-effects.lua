@@ -1,40 +1,35 @@
 -- Visual Effects Controller
 -- Handles rendering of transfer beam effects for the space elevator
+-- Uses animated sprites for polished lightning beam visuals
 
 local visual_effects = {}
 
 -- Beam configuration
+-- Scale: 1.0 = ~8 tiles tall (256px sprite / 32px per tile)
 local BEAM_CONFIG = {
-  -- Upload beam (surface to platform) - blue
+  -- Upload beam (surface to platform) - blue lightning
   upload = {
-    color = {r = 0.2, g = 0.6, b = 1, a = 0.8},
-    base_width = 3,
-    max_width = 12,
-    base_ttl = 30,  -- Base time to live (~0.5 seconds)
-    height = 60,
+    animation = "space-elevator-beam-blue",
+    base_scale = 2.0,   -- ~16 tiles tall minimum
+    max_scale = 3.5,    -- ~28 tiles tall at max transfer
   },
-  -- Download beam (platform to surface) - orange
+  -- Download beam (platform to surface) - orange lightning
   download = {
-    color = {r = 1, g = 0.5, b = 0.1, a = 0.8},
-    base_width = 3,
-    max_width = 12,
-    base_ttl = 30,
-    height = 60,
+    animation = "space-elevator-beam-orange",
+    base_scale = 2.0,
+    max_scale = 3.5,
   },
-  -- Fluid transfer beam - cyan/teal
+  -- Fluid transfer beam - cyan lightning
   fluid_upload = {
-    color = {r = 0, g = 0.8, b = 0.8, a = 0.7},
-    base_width = 4,
-    max_width = 10,
-    base_ttl = 30,
-    height = 60,
+    animation = "space-elevator-beam-cyan",
+    base_scale = 2.0,
+    max_scale = 3.0,
   },
   fluid_download = {
-    color = {r = 0.8, g = 0.4, b = 0, a = 0.7},
-    base_width = 4,
-    max_width = 10,
-    base_ttl = 30,
-    height = 60,
+    animation = "space-elevator-beam-orange",
+    tint = {r = 0.9, g = 0.5, b = 0.1, a = 1.0},  -- Darker orange for fluid download
+    base_scale = 2.0,
+    max_scale = 3.0,
   },
 }
 
@@ -52,15 +47,15 @@ function visual_effects.init_storage()
 end
 
 -- ============================================================================
--- Width Scaling
+-- Scale Calculation
 -- ============================================================================
 
--- Calculate beam width based on amount transferred
--- More items = wider beam (capped at max_width)
-local function calculate_width(config, amount)
-  -- Scale: 10 items = base width, 100+ items = max width
-  local scale = math.min(1, (amount or 10) / 100)
-  return config.base_width + (config.max_width - config.base_width) * scale
+-- Calculate beam scale based on amount transferred
+-- More items = larger/more intense beam (capped at max_scale)
+local function calculate_scale(config, amount)
+  -- Scale: 10 items = base scale, 100+ items = max scale
+  local t = math.min(1, (amount or 10) / 100)
+  return config.base_scale + (config.max_scale - config.base_scale) * t
 end
 
 -- ============================================================================
@@ -131,17 +126,17 @@ end
 local function destroy_beams(beam_data, beam_key)
   local beams = beam_data[beam_key]
   if beams then
-    if beams.surface_outer and beams.surface_outer.valid then
-      beams.surface_outer.destroy()
+    -- Handle surface animations (now an array of stacked segments)
+    if beams.surface_anims then
+      for _, anim in pairs(beams.surface_anims) do
+        if anim and anim.valid then
+          anim.destroy()
+        end
+      end
     end
-    if beams.surface_inner and beams.surface_inner.valid then
-      beams.surface_inner.destroy()
-    end
-    if beams.platform_outer and beams.platform_outer.valid then
-      beams.platform_outer.destroy()
-    end
-    if beams.platform_inner and beams.platform_inner.valid then
-      beams.platform_inner.destroy()
+    -- Handle single platform animation
+    if beams.platform_anim and beams.platform_anim.valid then
+      beams.platform_anim.destroy()
     end
     beam_data[beam_key] = nil
   end
@@ -152,90 +147,95 @@ end
 -- ============================================================================
 
 -- Draw or update a transfer beam from the elevator (surface side)
--- Returns the render IDs for outer and inner beams
-local function draw_surface_beam(entity, config, width)
-  local from_pos = entity.position
-  local to_pos = {
-    x = from_pos.x,
-    y = from_pos.y - config.height,
-  }
+-- Returns table of animation render objects (stacked for infinite beam effect)
+-- @param direction: "upload" or "download" - controls animation sequencing
+local function draw_surface_beam(entity, config, scale, direction)
+  local pos = entity.position
+  local animations = {}
 
-  -- Draw outer beam
-  local outer_id = rendering.draw_line{
-    surface = entity.surface,
-    from = from_pos,
-    to = to_pos,
-    color = config.color,
-    width = width,
-    time_to_live = BEAM_EXTEND_TTL,
-  }
+  -- Stack multiple animations to create infinite beam going off-screen
+  -- Tighter spacing ensures segments overlap for seamless beam
+  local sprite_height = 2.5 * scale  -- Very tight spacing for full overlap
+  local num_segments = 12  -- More segments to compensate for tighter spacing
+  local frame_stagger = 4  -- Frames to offset each segment (creates traveling effect)
 
-  -- Draw inner (brighter core) beam
-  local inner_color = {
-    r = math.min(1, config.color.r + 0.3),
-    g = math.min(1, config.color.g + 0.3),
-    b = math.min(1, config.color.b + 0.3),
-    a = config.color.a * 0.6,
-  }
-  local inner_id = rendering.draw_line{
-    surface = entity.surface,
-    from = from_pos,
-    to = to_pos,
-    color = inner_color,
-    width = math.max(1, width - 2),
-    time_to_live = BEAM_EXTEND_TTL,
-  }
+  for i = 0, num_segments - 1 do
+    local beam_center = {
+      x = pos.x,
+      y = pos.y - 2 - (i * sprite_height),  -- Stack upward from silo doors
+    }
 
-  return outer_id, inner_id
+    -- Calculate animation offset for sequential effect
+    -- Upload: bottom starts first (high offset), top starts last (low offset)
+    -- Download: top starts first (high offset), bottom starts last (low offset)
+    local anim_offset
+    if direction == "download" then
+      -- Top segments are ahead in animation (beam coming down)
+      anim_offset = i * frame_stagger
+    else
+      -- Bottom segments are ahead in animation (beam going up)
+      anim_offset = (num_segments - 1 - i) * frame_stagger
+    end
+
+    local success, anim_id = pcall(function()
+      return rendering.draw_animation{
+        animation = config.animation,
+        target = beam_center,
+        surface = entity.surface,
+        time_to_live = BEAM_EXTEND_TTL,
+        animation_speed = 0.5,
+        animation_offset = anim_offset,
+        x_scale = scale,
+        y_scale = scale,
+        tint = config.tint,
+        render_layer = "explosion",
+      }
+    end)
+
+    if success and anim_id then
+      table.insert(animations, anim_id)
+    end
+  end
+
+  return animations
 end
 
 -- Draw or update a transfer beam at the platform dock
--- Returns the render IDs for outer and inner beams
-local function draw_platform_beam_internal(dock_entity, config, width)
-  if not dock_entity or not dock_entity.valid then return nil, nil end
+-- Returns the animation render object
+local function draw_platform_beam_internal(dock_entity, config, scale)
+  if not dock_entity or not dock_entity.valid then return nil end
 
   local dock_pos = dock_entity.position
   local surface = dock_entity.surface
   local platform_bottom = get_platform_bottom_edge(surface, dock_pos)
 
-  local from_pos = {
+  -- Position beam below the platform
+  local beam_center = {
     x = dock_pos.x,
-    y = platform_bottom + 100,
-  }
-  local to_pos = {
-    x = dock_pos.x,
-    y = platform_bottom + 2,
+    y = platform_bottom + 10,
   }
 
-  -- Draw outer beam
-  local outer_id = rendering.draw_line{
-    surface = surface,
-    from = from_pos,
-    to = to_pos,
-    color = config.color,
-    width = width,
-    time_to_live = BEAM_EXTEND_TTL,
-    render_layer = "zero",
-  }
+  -- Draw animated beam with uniform scaling
+  local success, anim_id = pcall(function()
+    return rendering.draw_animation{
+      animation = config.animation,
+      target = beam_center,
+      surface = surface,
+      time_to_live = BEAM_EXTEND_TTL,
+      animation_speed = 0.5,
+      x_scale = scale,
+      y_scale = scale,  -- Uniform scale - no warping
+      tint = config.tint,
+      render_layer = "explosion",  -- Highest visible layer
+    }
+  end)
 
-  -- Draw inner beam
-  local inner_color = {
-    r = math.min(1, config.color.r + 0.3),
-    g = math.min(1, config.color.g + 0.3),
-    b = math.min(1, config.color.b + 0.3),
-    a = config.color.a * 0.6,
-  }
-  local inner_id = rendering.draw_line{
-    surface = surface,
-    from = from_pos,
-    to = to_pos,
-    color = inner_color,
-    width = math.max(1, width - 2),
-    time_to_live = BEAM_EXTEND_TTL,
-    render_layer = "zero",
-  }
+  if not success then
+    log("ERROR drawing platform animation: " .. tostring(anim_id))
+    return nil
+  end
 
-  return outer_id, inner_id
+  return anim_id
 end
 
 -- Main function to draw/update beams on both surfaces
@@ -243,7 +243,7 @@ end
 -- @param dock_entity: The dock entity on the platform (can be nil)
 -- @param direction: "upload" or "download"
 -- @param is_fluid: boolean
--- @param amount: number of items/fluid transferred (affects beam width)
+-- @param amount: number of items/fluid transferred (affects beam scale)
 local function draw_beam_both(elevator_entity, dock_entity, direction, is_fluid, amount)
   if not elevator_entity or not elevator_entity.valid then return end
 
@@ -257,32 +257,32 @@ local function draw_beam_both(elevator_entity, dock_entity, direction, is_fluid,
   end
   local config = BEAM_CONFIG[config_key] or BEAM_CONFIG.upload
 
-  -- Calculate width based on amount
-  local width = calculate_width(config, amount)
+  -- Calculate scale based on amount
+  local scale = calculate_scale(config, amount)
 
   -- Beam key for tracking (separate upload/download beams)
   local beam_key = config_key
 
   -- Check if we have valid existing beams
   local existing = beam_data[beam_key]
+  local first_anim_valid = existing and existing.surface_anims and existing.surface_anims[1] and existing.surface_anims[1].valid
   local needs_new_beam = not existing
-    or not is_beam_valid(existing.surface_outer)
-    or (existing.width and math.abs(existing.width - width) > 1)  -- Width changed significantly
+    or not first_anim_valid
+    or (existing.scale and math.abs(existing.scale - scale) > 0.1)  -- Scale changed significantly
 
   if needs_new_beam then
     -- Destroy old beams if they exist
     destroy_beams(beam_data, beam_key)
 
-    -- Create new beams
-    local s_outer, s_inner = draw_surface_beam(elevator_entity, config, width)
-    local p_outer, p_inner = draw_platform_beam_internal(dock_entity, config, width)
+    -- Create new animated beams (surface returns array of stacked segments)
+    -- Pass direction for sequential animation effect
+    local surface_anims = draw_surface_beam(elevator_entity, config, scale, direction)
+    local platform_anim = draw_platform_beam_internal(dock_entity, config, scale)
 
     beam_data[beam_key] = {
-      surface_outer = s_outer,
-      surface_inner = s_inner,
-      platform_outer = p_outer,
-      platform_inner = p_inner,
-      width = width,
+      surface_anims = surface_anims,
+      platform_anim = platform_anim,
+      scale = scale,
       last_tick = game.tick,
     }
   else
@@ -290,15 +290,13 @@ local function draw_beam_both(elevator_entity, dock_entity, direction, is_fluid,
     -- (Factorio doesn't let us modify time_to_live directly)
     destroy_beams(beam_data, beam_key)
 
-    local s_outer, s_inner = draw_surface_beam(elevator_entity, config, width)
-    local p_outer, p_inner = draw_platform_beam_internal(dock_entity, config, width)
+    local surface_anims = draw_surface_beam(elevator_entity, config, scale, direction)
+    local platform_anim = draw_platform_beam_internal(dock_entity, config, scale)
 
     beam_data[beam_key] = {
-      surface_outer = s_outer,
-      surface_inner = s_inner,
-      platform_outer = p_outer,
-      platform_inner = p_inner,
-      width = width,
+      surface_anims = surface_anims,
+      platform_anim = platform_anim,
+      scale = scale,
       last_tick = game.tick,
     }
   end
@@ -340,9 +338,10 @@ function visual_effects.draw_transfer_beam(entity, direction, is_fluid, amount)
     config_key = "fluid_" .. direction
   end
   local config = BEAM_CONFIG[config_key] or BEAM_CONFIG.upload
-  local width = calculate_width(config, amount or 10)
+  local scale = calculate_scale(config, amount or 10)
 
-  draw_surface_beam(entity, config, width)
+  -- draw_surface_beam now returns an array, but we don't track it for legacy calls
+  draw_surface_beam(entity, config, scale, direction)
 end
 
 function visual_effects.draw_item_upload_beam(entity, amount)
