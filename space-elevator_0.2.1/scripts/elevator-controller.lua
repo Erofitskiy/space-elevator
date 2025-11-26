@@ -2,6 +2,7 @@
 -- Handles runtime logic for space elevator operations
 
 local construction_stages = require("scripts.construction-stages")
+local transfer_controller = require("scripts.transfer-controller")
 
 local elevator_controller = {}
 
@@ -314,6 +315,9 @@ function elevator_controller.on_elevator_removed(event)
 
   -- Remove from constructing list
   storage.elevators_constructing[unit_number] = nil
+
+  -- Cleanup visual effects tracking
+  transfer_controller.cleanup_elevator(unit_number)
 
   -- Remove from tracking table
   local index = get_elevator_index(unit_number)

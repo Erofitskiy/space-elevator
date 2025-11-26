@@ -184,9 +184,47 @@ Stage 5: Activation & Calibration
 ### Graphics & Audio
 - [ ] Elevator base sprite (multiple stages)
 - [ ] Tether/cable visual
-- [ ] Launch/transfer animation
+- [x] Launch/transfer animation (basic beam effect implemented via LuaRendering)
 - [ ] Ambient operation sounds
 - [ ] Transfer initiation/completion sounds
+
+### Transfer Visual Effects
+**Goal:** Display a visual "beam" effect when items/fluids transfer between elevator and platform.
+
+**Limitation:** Rocket silo doors cannot be opened programmatically - `rocket_silo_status` is read-only and door animation is tied to launch sequence.
+
+**Implementation Options:**
+
+#### Option 1: LuaRendering.draw_line() - SELECTED FOR INITIAL IMPLEMENTATION
+- Simple colored beam shooting upward from elevator during transfers
+- No prototype changes required (runtime only)
+- Customizable color (blue for upload, orange for download)
+- Set `time_to_live` for automatic fade
+- Can add width/dash effects for visual flair
+- Example:
+  ```lua
+  rendering.draw_line{
+    surface = elevator.surface,
+    from = elevator.position,
+    to = {elevator.position.x, elevator.position.y - 50},
+    color = {r = 0, g = 0.5, b = 1, a = 0.8},
+    width = 4,
+    time_to_live = 30,
+  }
+  ```
+
+#### Option 2: BeamPrototype Entity (Future)
+- Create custom `BeamPrototype` in data.lua
+- More realistic beam with head/tail/body segments
+- Can reuse laser turret graphics as base
+- Requires `surface.create_entity{name="beam", source=..., target=...}`
+- More complex but better visual quality
+
+#### Option 3: LuaRendering.draw_animation() (Future)
+- Create custom animation sprite sheet
+- Most polished appearance
+- Requires artwork creation
+- Can animate beam intensity, particles, etc.
 
 ### Current Status
 - Using rocket silo placeholder graphics
@@ -232,7 +270,8 @@ space-elevator_0.2.1/
     ├── construction-stages.lua    # 5-stage construction system
     ├── platform-controller.lua    # Docking and platform management
     ├── transfer-controller.lua    # Item and fluid transfers
-    └── player-transport.lua       # Player teleportation
+    ├── player-transport.lua       # Player teleportation
+    └── visual-effects.lua         # Transfer beam rendering (Phase 5)
 ```
 
 ---

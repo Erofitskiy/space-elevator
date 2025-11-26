@@ -2,6 +2,7 @@
 -- Handles bidirectional item and fluid transfers between elevators and platform docks
 
 local platform_controller = require("scripts.platform-controller")
+local visual_effects = require("scripts.visual-effects")
 
 local transfer_controller = {}
 
@@ -89,6 +90,11 @@ function transfer_controller.transfer_items_up(elevator_data, item_name, amount)
     end
   end
 
+  -- Draw upload beam effect if items were transferred
+  if total > 0 and elevator_data.entity and elevator_data.entity.valid then
+    visual_effects.draw_item_upload_beam(elevator_data.entity)
+  end
+
   return {transferred = transferred, total = total}
 end
 
@@ -137,6 +143,11 @@ function transfer_controller.transfer_items_down(elevator_data, item_name, amoun
         remaining = remaining - inserted
       end
     end
+  end
+
+  -- Draw download beam effect if items were transferred
+  if total > 0 and elevator_data.entity and elevator_data.entity.valid then
+    visual_effects.draw_item_download_beam(elevator_data.entity)
   end
 
   return {transferred = transferred, total = total}
@@ -343,6 +354,10 @@ function transfer_controller.transfer_fluids_up(elevator_data, amount)
   if inserted > 0 then
     -- Remove from source
     source_tank.remove_fluid{name = source_fluid.name, amount = inserted}
+    -- Draw fluid upload beam effect
+    if elevator_data.entity and elevator_data.entity.valid then
+      visual_effects.draw_fluid_upload_beam(elevator_data.entity)
+    end
   end
 
   return {transferred = inserted, fluid_name = source_fluid.name}
@@ -389,6 +404,10 @@ function transfer_controller.transfer_fluids_down(elevator_data, amount)
   if inserted > 0 then
     -- Remove from source
     source_tank.remove_fluid{name = source_fluid.name, amount = inserted}
+    -- Draw fluid download beam effect
+    if elevator_data.entity and elevator_data.entity.valid then
+      visual_effects.draw_fluid_download_beam(elevator_data.entity)
+    end
   end
 
   return {transferred = inserted, fluid_name = source_fluid.name}
@@ -435,6 +454,12 @@ end
 
 function transfer_controller.init_storage()
   storage.active_transfers = storage.active_transfers or {}
+  visual_effects.init_storage()
+end
+
+-- Cleanup visual effects tracking when elevator is removed
+function transfer_controller.cleanup_elevator(unit_number)
+  visual_effects.cleanup_elevator(unit_number)
 end
 
 return transfer_controller
