@@ -75,6 +75,7 @@ local construction_chest = table.deepcopy(data.raw["container"]["steel-chest"])
 construction_chest.name = "space-elevator-chest"
 construction_chest.inventory_size = 48  -- Large inventory for all construction materials
 construction_chest.minable = nil  -- Cannot be mined separately (linked to elevator)
+construction_chest.next_upgrade = nil  -- Clear inherited upgrade path (fixes mod compatibility)
 construction_chest.localised_name = {"entity-name.space-elevator-chest"}
 construction_chest.localised_description = {"entity-description.space-elevator-chest"}
 
@@ -122,6 +123,7 @@ data:extend({docking_station})
 local elevator_fluid_tank = table.deepcopy(data.raw["storage-tank"]["storage-tank"])
 elevator_fluid_tank.name = "space-elevator-fluid-tank"
 elevator_fluid_tank.minable = nil  -- Cannot be mined separately (linked to elevator)
+elevator_fluid_tank.next_upgrade = nil  -- Clear inherited upgrade path (fixes mod compatibility)
 elevator_fluid_tank.max_health = 500
 elevator_fluid_tank.fluid_box = {
   volume = fluid_tank_capacity,  -- Configurable capacity
