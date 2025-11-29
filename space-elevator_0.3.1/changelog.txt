@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.2
+Date: 2025-11-30
+  Bugfixes:
+    - Fixed construction progress freezing after clicking "Begin Construction"
+        - Materials were consumed but construction never progressed
+        - Caused by duplicate on_nth_tick(10) handlers - second handler replaced the first
+        - Construction tick handler is now combined with player transit handler
+  Locale:
+    - Added Russian localisation (thanks Overmind_x!)
+
+---------------------------------------------------------------------------------------------------
 Version: 0.3.1
 Date: 2025-11-29
   Bugfixes:

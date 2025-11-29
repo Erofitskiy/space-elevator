@@ -1604,20 +1604,17 @@ script.on_event(defines.events.on_gui_selection_state_changed, function(event)
   end
 end)
 
--- Tick handler for construction progress
+-- Tick handler for construction progress AND player transit (both need 10-tick updates)
+-- NOTE: on_nth_tick only allows ONE handler per interval - multiple calls replace previous handlers!
 script.on_nth_tick(10, function(event)
   elevator_controller.update_construction(event.tick)
+  player_transport.process_transit()
 end)
 
 -- Tick handler for automatic item transfers (every 30 ticks = 0.5 seconds)
 script.on_nth_tick(30, function(event)
   transfer_controller.process_auto_transfers()
   transfer_controller.process_auto_fluid_transfers()
-end)
-
--- Tick handler for player transit (every 10 ticks for smooth countdown)
-script.on_nth_tick(10, function(event)
-  player_transport.process_transit()
 end)
 
 -- ============================================================================
