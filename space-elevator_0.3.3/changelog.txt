@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.4
+Date: 2025-11-30
+  Changes:
+    - Space Elevator Dock inventory is now view-only
+        - Prevents pulling items from dock directly to player inventory
+        - Items must be transferred through the elevator system as intended
+
+---------------------------------------------------------------------------------------------------
 Version: 0.3.3
 Date: 2025-11-30
   Bugfixes:

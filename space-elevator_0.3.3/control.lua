@@ -1145,10 +1145,8 @@ remote.add_interface("space_elevator", {
         inventory = inventory,
         columns = 12,
         show_empty = true,
-        interactive = true,
+        interactive = false,  -- View-only to prevent bypassing elevator transfers
         mod_name = "space_elevator",
-        on_click = "on_inventory_click",
-        on_transfer = "on_inventory_transfer",
       })
     end
 
