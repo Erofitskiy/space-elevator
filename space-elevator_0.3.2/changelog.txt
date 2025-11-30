@@ -1,4 +1,17 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.3
+Date: 2025-11-30
+  Bugfixes:
+    - Fixed quality items not transferring correctly through the elevator
+        - Quality items were inserted as normal quality at destination
+        - Source quality items were not removed (quality parameter was missing)
+        - Now properly preserves quality on both insert and remove operations
+  Changes:
+    - Hid player inventory when viewing Space Elevator Dock GUI
+        - Prevents direct player-to-dock item transfers that bypass the elevator
+        - Items must now go through the proper elevator transfer system
+
+---------------------------------------------------------------------------------------------------
 Version: 0.3.2
 Date: 2025-11-30
   Bugfixes:

@@ -1186,6 +1186,8 @@ local function register_gui()
     })
 
     -- Register dock GUI
+    -- Note: show_player_inventory is false to prevent direct player<->dock transfers
+    -- Items must go through the space elevator for proper gameplay
     remote.call("entity_gui_lib", "register", {
       mod_name = "space_elevator",
       entity_name = "space-elevator-dock",
@@ -1194,8 +1196,7 @@ local function register_gui()
       on_update = "update_dock_gui",
       on_close = "close_dock_gui",
       update_interval = 60,  -- Update every second
-      show_player_inventory = true,
-      player_inventory_position = "left",  -- Vanilla-style layout
+      show_player_inventory = false,
     })
 
     -- Enable debug mode to troubleshoot registration
